@@ -9,8 +9,9 @@ Duration saneTimeout(Duration? value) =>
     value != null && value > Duration.zero ? value : defaultTimeout;
 
 /// Returns a nonnegative retry count, falling back to the default.
-int saneRetries(int? value) =>
-    value != null && value >= 0 ? value : defaultMaxRetries;
+int saneRetries(int? value) => value != null && value >= 0
+    ? (value > defaultMaxRetries ? defaultMaxRetries : value)
+    : defaultMaxRetries;
 
 /// Explains why an HTTP endpoint cannot be used, or returns null.
 String? urlRefusal(String? url, String what) {

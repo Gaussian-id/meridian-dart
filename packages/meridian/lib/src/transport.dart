@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'clock.dart' as clock;
 import 'config.dart';
 import 'errors.dart';
 import 'result.dart';
@@ -176,6 +177,43 @@ final class Transport {
     Call call, {
     Future<void>? abortTrigger,
   }) async {
+    // [1] Send one logical call, stopping retries before any success body is read.
+    MeridianError? previous;
+    for (var tried = 0;; tried++) {
+      final outcome = await _openOnce(call, abortTrigger: abortTrigger);
+      if (outcome is Ok<Opened>) return outcome;
+      final error = (outcome as Err<Opened>).error;
+
+      // [2] A duplicate key after an uncertain attempt represents that attempt.
+      if (previous != null &&
+          previous.code != 'rate_limited' &&
+          error.code == 'idempotency_conflict' &&
+          _header(call.headers, 'idempotency-key') != null) {
+        return Err(previous);
+      }
+      final wait = nextWait(tried, error, call, _maxRetries);
+      if (wait == null) return Err(error);
+      previous = error;
+
+      // [3] Let caller cancellation interrupt even an uncooperative sleeper.
+      final delayed = _sleep(wait);
+      final aborted = abortTrigger?.then<MeridianError?>(
+        (_) => clientError('aborted', 'The call was cancelled.'),
+        onError: (Object _) =>
+            clientError('aborted', 'The call was cancelled.'),
+      );
+      final reason = await Future.any<MeridianError?>([
+        delayed,
+        if (aborted != null) aborted,
+      ]);
+      if (reason != null) return Err(reason);
+    }
+  }
+
+  Future<MeridianResult<Opened>> _openOnce(
+    Call call, {
+    Future<void>? abortTrigger,
+  }) async {
     // [1] Reject configuration and unencodable bodies before sending.
     if (_refusal != null) return Err(_refusal);
     if (_closed) return Err(configError('This client is closed.'));
@@ -240,6 +278,7 @@ final class Transport {
       response.statusCode,
       requestId,
       (text as Ok<String>).data,
+      retryAfter: retryAfter(_header(response.headers, 'retry-after')),
     ));
   }
 
@@ -317,4 +356,89 @@ String? _header(Map<String, String> headers, String name) {
     if (entry.key.toLowerCase() == name) return entry.value;
   }
   return null;
+}
+
+/// Longest server-requested delay for which the SDK retries.
+const maxRetryAfter = Duration(seconds: 30);
+
+/// Parses a positive Retry-After delay without relying on dart:io.
+Duration? retryAfter(String? value, {DateTime? now}) {
+  if (value == null || value.isEmpty) return null;
+  // [1] Decimal seconds are bounded before parsing to avoid integer overflow.
+  if (RegExp(r'^[0-9]+$').hasMatch(value)) {
+    if (value.length > 18) return null;
+    final seconds = int.tryParse(value);
+    if (seconds == null || seconds <= 0) return null;
+    return seconds > Duration.secondsPerDay
+        ? const Duration(days: 1)
+        : Duration(seconds: seconds);
+  }
+
+  // [2] Parse only the HTTP-date form, then validate normalized calendar fields.
+  final match = RegExp(
+    r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), ([0-9]{2}) '
+    r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) '
+    r'([0-9]{4}) ([0-9]{2}):([0-9]{2}):([0-9]{2}) GMT$',
+  ).firstMatch(value);
+  if (match == null) return null;
+  const months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final day = int.parse(match[2]!);
+  final month = months.indexOf(match[3]!) + 1;
+  final year = int.parse(match[4]!);
+  final hour = int.parse(match[5]!);
+  final minute = int.parse(match[6]!);
+  final second = int.parse(match[7]!);
+  final date = DateTime.utc(year, month, day, hour, minute, second);
+  if (date.year != year ||
+      date.month != month ||
+      date.day != day ||
+      date.hour != hour ||
+      date.minute != minute ||
+      date.second != second) {
+    return null;
+  }
+  final remaining = date.difference((now ?? DateTime.now()).toUtc());
+  if (remaining <= Duration.zero) return null;
+  return remaining > const Duration(days: 1)
+      ? const Duration(days: 1)
+      : remaining;
+}
+
+/// Returns the next delay, or null when the call must return its error.
+Duration? nextWait(int tried, MeridianError error, Call call, int maxRetries) {
+  // [1] The error code and request kind both constrain retry eligibility.
+  if (tried >= saneRetries(maxRetries) ||
+      !error.retryable ||
+      !retryableCodes.contains(error.code) ||
+      (!call.retry && error.code != 'rate_limited')) {
+    return null;
+  }
+  // [2] Server delays above thirty seconds end this call immediately.
+  if (error.retryAfter case final serverWait?) {
+    return serverWait > maxRetryAfter ? null : serverWait;
+  }
+  final jitter = (clock.jitterSource().clamp(0.0, 0.999999999) * 250).floor();
+  return Duration(milliseconds: 500 * (1 << tried) + jitter);
+}
+
+Future<MeridianError?> _sleep(Duration duration) async {
+  try {
+    await clock.sleeper(duration);
+    return null;
+  } on Object {
+    return clientError('network_error', 'The retry wait failed.');
+  }
 }
