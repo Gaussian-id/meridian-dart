@@ -6,6 +6,73 @@ import 'package:meridian/src/generated/admin_models.dart';
 import 'package:test/test.dart';
 
 void main() {
+  // [1] Read the pinned public schema once for all conformance checks.
+  final publicSpec =
+      jsonDecode(File('../../spec/meridian-public.json').readAsStringSync())
+          as Map<String, dynamic>;
+  final schemas = ((publicSpec['components'] as Map<String, dynamic>)['schemas']
+      as Map<String, dynamic>);
+
+  Set<String> properties(String name) =>
+      ((schemas[name] as Map<String, dynamic>)['properties']
+              as Map<String, dynamic>)
+          .keys
+          .toSet();
+
+  Set<String> required(String name) =>
+      ((schemas[name] as Map<String, dynamic>)['required'] as List<dynamic>?)
+          ?.cast<String>()
+          .toSet() ??
+      <String>{};
+
+  test('engine codes and types match the pinned public error schema', () {
+    final errorBody = schemas['ErrorBody'] as Map<String, dynamic>;
+    final fields = errorBody['properties'] as Map<String, dynamic>;
+    final code = fields['code'] as Map<String, dynamic>;
+    final type = fields['type'] as Map<String, dynamic>;
+    expect(engineErrorCodes, (code['enum'] as List<dynamic>).cast<String>());
+    expect(knownTypes.difference({'client_error'}),
+        (type['enum'] as List<dynamic>).cast<String>().toSet());
+  });
+
+  // [2] Check the hand-written public surface against the pinned wire fields.
+  test('public response models match the pinned wire fields', () {
+    final models = <String, Set<String>>{
+      'ChatCompletion': ChatCompletion.wireFields,
+      'ChatChoice': ChatChoice.wireFields,
+      'AssistantMessage': AssistantMessage.wireFields,
+      'ModelList': ModelList.wireFields,
+      'ModelObject': ModelInfo.wireFields,
+    };
+    for (final entry in models.entries) {
+      expect(entry.value, properties(entry.key), reason: entry.key);
+      expect(entry.value.containsAll(required(entry.key)), true,
+          reason: '${entry.key} required fields');
+    }
+  });
+
+  test('usage exposes only the three token counts', () {
+    final usageFields = properties('Usage')
+      ..removeWhere((field) => field.endsWith('_details'));
+    expect(TokenUsage.wireFields, usageFields);
+    expect(TokenUsage.wireFields.containsAll(required('Usage')), true);
+  });
+
+  test('open request models use pinned names and allow extra fields', () {
+    for (final (schemaName, modelFields) in [
+      ('ChatCompletionRequest', ChatParams.wireFields),
+      ('ChatMessage', ChatMessage.wireFields),
+    ]) {
+      final schema = schemas[schemaName] as Map<String, dynamic>;
+      expect(properties(schemaName).containsAll(modelFields), true,
+          reason: schemaName);
+      expect(modelFields.containsAll(required(schemaName)), true,
+          reason: '$schemaName required fields');
+      expect(schema['additionalProperties'], true, reason: schemaName);
+    }
+  });
+
+  // [3] Check the generated admin surface and representative validation paths.
   test('the pinned source records the engine revision and API version', () {
     final source = jsonDecode(File('../../spec/SOURCE.json').readAsStringSync())
         as Map<String, dynamic>;

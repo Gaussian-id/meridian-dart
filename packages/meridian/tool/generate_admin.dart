@@ -80,9 +80,11 @@ Map<String, Object?> _map(Object? value) =>
 List<Object?> _list(Object? value) => value is List<Object?> ? value : const [];
 
 Object? _withoutPrices(Object? node) {
+  // [1] Traverse nested schema fragments before selecting response models.
   if (node is List<Object?>) return node.map(_withoutPrices).toList();
   if (node is! Map<String, Object?>) return node;
   final copy = <String, Object?>{};
+  // [2] Remove priced properties and their required entries together.
   for (final entry in node.entries) {
     if (entry.key == 'properties') {
       copy[entry.key] = <String, Object?>{
@@ -103,11 +105,13 @@ Object? _withoutPrices(Object? node) {
 }
 
 void _references(Object? node, Set<String> names) {
+  // [1] Walk arrays and objects for schema references.
   if (node is List<Object?>) {
     for (final value in node) {
       _references(value, names);
     }
   } else if (node is Map<String, Object?>) {
+    // [2] Record a reference before following its nested values.
     final ref = node[r'$ref'];
     if (ref is String && ref.startsWith('#/components/schemas/')) {
       names.add(ref.substring('#/components/schemas/'.length));
@@ -146,6 +150,7 @@ bool _nullable(Map<String, Object?> schema) =>
     _list(schema['type']).contains('null');
 
 String _type(Map<String, Object?> schema, Map<String, Object?> schemas) {
+  // [1] Resolve references to either another object model or a primitive.
   final value = _nonNull(schema);
   final ref = _refName(value);
   if (ref != null) {
@@ -154,6 +159,7 @@ String _type(Map<String, Object?> schema, Map<String, Object?> schemas) {
         ? ref
         : _type(target, schemas);
   }
+  // [2] Map supported OpenAPI shapes to Dart getter types.
   switch (value['type']) {
     case 'string':
       return 'String';
@@ -174,6 +180,7 @@ String _type(Map<String, Object?> schema, Map<String, Object?> schemas) {
 
 String _validExpression(
     String value, Map<String, Object?> schema, Map<String, Object?> schemas) {
+  // [1] Validate referenced objects recursively.
   final shape = _nonNull(schema);
   final ref = _refName(shape);
   if (ref != null) {
@@ -183,6 +190,7 @@ String _validExpression(
     }
     return _validExpression(value, target, schemas);
   }
+  // [2] Validate primitives and every array element.
   switch (shape['type']) {
     case 'string':
       return '$value is String';
@@ -205,6 +213,7 @@ String _validExpression(
 String _getterExpression(
     String value, Map<String, Object?> schema, Map<String, Object?> schemas,
     {bool promoted = false}) {
+  // [1] Wrap referenced objects in their generated extension types.
   final shape = _nonNull(schema);
   final ref = _refName(shape);
   if (ref != null) {
@@ -214,6 +223,7 @@ String _getterExpression(
     }
     return _getterExpression(value, target, schemas, promoted: promoted);
   }
+  // [2] Convert arrays and scalar values without widening the wire type.
   if (shape['type'] == 'array') {
     final itemSchema = _map(shape['items']);
     final itemType = _type(itemSchema, schemas);
@@ -238,6 +248,7 @@ String _lowerCamel(String name) {
 
 String _model(
     String name, Map<String, Object?> schema, Map<String, Object?> schemas) {
+  // [1] Start one documented extension type for a reachable object schema.
   final out = StringBuffer();
   final description = (schema['description'] as String?)?.split('\n').first;
   out.writeln(
@@ -245,6 +256,7 @@ String _model(
   out.writeln('extension type $name._(Map<String, Object?> json) {');
   final properties = _map(schema['properties']);
   final required = _list(schema['required']).whereType<String>().toSet();
+  // [2] Emit safe optional getters and direct required getters.
   for (final entry in properties.entries) {
     final property = _map(entry.value);
     final type = _type(property, schemas);
@@ -281,6 +293,7 @@ String _model(
           '${_getterExpression(value, property, schemas)};');
     }
   }
+  // [3] Validate every required field, including nested objects and arrays.
   out.writeln(
       '  /// Whether the required wire fields have their expected shapes.');
   out.writeln('  static bool isValid(Object? value) {');
@@ -310,6 +323,7 @@ String _model(
       out.writeln('    }');
     }
   }
+  // [4] Expose one parser that returns null for an invalid response shape.
   out.writeln('    return true;');
   out.writeln('  }');
   out.writeln('  /// Parse a valid wire object, or return null.');
