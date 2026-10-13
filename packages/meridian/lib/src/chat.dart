@@ -4,6 +4,7 @@ import 'config.dart';
 import 'errors.dart';
 import 'models.dart';
 import 'result.dart';
+import 'stream.dart';
 import 'transport.dart';
 
 /// Chat completions through the shared Meridian transport.
@@ -44,6 +45,28 @@ final class ChatApi {
           requestId: value.requestId));
     }
     return Ok(completion);
+  }
+
+  /// Open a streamed chat completion before reading its first body event.
+  Future<MeridianResult<ChatStream>> stream(
+    ChatParams params, {
+    String? idempotencyKey,
+    Future<void>? abortTrigger,
+  }) async {
+    if (idempotencyKey != null && !validIdempotencyKey(idempotencyKey)) {
+      return Err(configError('The idempotency key is invalid.'));
+    }
+    final call = Call.json(
+      method: 'POST',
+      path: _path,
+      body: chatBody(params, stream: true),
+      headers: {'idempotency-key': idempotencyKey ?? newIdempotencyKey()},
+    );
+    final opened = await _transport.open(call, abortTrigger: abortTrigger);
+    return switch (opened) {
+      Ok<Opened>(:final data) => Ok(ChatStream(data)),
+      Err<Opened>(:final error) => Err(error),
+    };
   }
 }
 

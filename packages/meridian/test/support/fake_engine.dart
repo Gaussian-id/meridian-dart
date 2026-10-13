@@ -85,6 +85,12 @@ final class FakeEngine {
   /// Number of upstream body subscriptions cancelled.
   int upstreamCancels = 0;
 
+  /// Number of pauses observed by the fake response body.
+  int upstreamPauses = 0;
+
+  /// Number of resumes observed by the fake response body.
+  int upstreamResumes = 0;
+
   /// Number of abort triggers observed.
   int aborts = 0;
 
@@ -188,6 +194,8 @@ final class FakeEngine {
         cancelled = true;
         upstreamCancels++;
       },
+      onPause: () => upstreamPauses++,
+      onResume: () => upstreamResumes++,
     );
     return http.StreamedResponse(controller.stream, answer.status,
         headers: headers, request: request);
