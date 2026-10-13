@@ -12,6 +12,35 @@ Future<int> runGate(List<String> arguments) async {
   return process.exitCode;
 }
 
+Future<int> runFlutterGate(List<String> arguments) async {
+  print('> flutter ${arguments.join(' ')}');
+  try {
+    final process = await Process.start(
+      'flutter',
+      arguments,
+      workingDirectory: '../meridian_flutter',
+      mode: ProcessStartMode.inheritStdio,
+      runInShell: Platform.isWindows,
+    );
+    return await process.exitCode;
+  } on ProcessException {
+    print('Flutter is not on PATH; the Flutter gate cannot pass.');
+    return 1;
+  }
+}
+
+Future<bool> flutterOnPath() async {
+  try {
+    final result = await Process.run(
+      Platform.isWindows ? 'where.exe' : 'which',
+      ['flutter'],
+    );
+    return result.exitCode == 0;
+  } on ProcessException {
+    return false;
+  }
+}
+
 Future<void> main() async {
   // [1] Check formatting, analysis and tests in that order.
   final commands = <List<String>>[
@@ -28,6 +57,20 @@ Future<void> main() async {
     final exitCode = await runGate(command);
     if (exitCode != 0) {
       exit(exitCode);
+    }
+  }
+  // [4] Flutter analysis and widget tests are required once its package exists.
+  if (File('../meridian_flutter/pubspec.yaml').existsSync()) {
+    if (!await flutterOnPath()) {
+      print('Flutter is not on PATH; the Flutter gate cannot pass.');
+      exit(1);
+    }
+    for (final command in <List<String>>[
+      ['analyze'],
+      ['test'],
+    ]) {
+      final exitCode = await runFlutterGate(command);
+      if (exitCode != 0) exit(exitCode);
     }
   }
 }
