@@ -207,7 +207,15 @@ final class ChatStream extends Stream<ChatChunk> {
       final engineError =
           errorFromEnvelope(envelope, headerRequestId: requestId);
       _engineEnd = true;
-      _events.add(_Event(data, engineError: engineError));
+      var relayData = data;
+      final rawId = envelope['request_id'];
+      if (envelope.containsKey('request_id') &&
+          (rawId is! String || cleanRequestId(rawId) == null)) {
+        final safeEnvelope = Map<String, Object?>.of(envelope)
+          ..remove('request_id');
+        relayData = jsonEncode({...decoded, 'error': safeEnvelope});
+      }
+      _events.add(_Event(relayData, engineError: engineError));
       _finish(engineError, stopUpstream: true);
       return;
     }

@@ -8,7 +8,16 @@ final class ChatMessage {
   /// Creates a message with an advisory role and arbitrary content.
   ChatMessage(
       {required this.role, this.content, Map<String, Object?> extra = const {}})
-      : extra = Map.unmodifiable(extra);
+      : extra = Map.unmodifiable(extra),
+        _hasContent = true;
+
+  ChatMessage._fromWire(
+      {required this.role,
+      required this.content,
+      required bool hasContent,
+      required Map<String, Object?> extra})
+      : extra = Map.unmodifiable(extra),
+        _hasContent = hasContent;
 
   /// Creates a system message.
   ChatMessage.system(String content) : this(role: 'system', content: content);
@@ -29,6 +38,8 @@ final class ChatMessage {
   /// Text, content parts, or null for a tool call.
   final Object? content;
 
+  final bool _hasContent;
+
   /// Additional fields forwarded to the engine.
   final Map<String, Object?> extra;
 
@@ -40,9 +51,10 @@ final class ChatMessage {
     final fields = Map<String, Object?>.from(value);
     fields.remove('role');
     fields.remove('content');
-    return ChatMessage(
+    return ChatMessage._fromWire(
       role: value['role'] as String,
       content: value['content'],
+      hasContent: value.containsKey('content'),
       extra: fields,
     );
   }
@@ -52,7 +64,7 @@ final class ChatMessage {
     final fields = Map<String, Object?>.from(extra)
       ..remove('role')
       ..remove('content');
-    return {...fields, 'role': role, 'content': content};
+    return {...fields, 'role': role, if (_hasContent) 'content': content};
   }
 }
 
