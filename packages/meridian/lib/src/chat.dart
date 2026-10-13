@@ -62,7 +62,8 @@ final class ChatApi {
       body: chatBody(params, stream: true),
       headers: {'idempotency-key': idempotencyKey ?? newIdempotencyKey()},
     );
-    final opened = await _transport.open(call, abortTrigger: abortTrigger);
+    final opened = await _transport.open(call,
+        abortTrigger: abortTrigger, headersOnly: true);
     return switch (opened) {
       Ok<Opened>(:final data) => Ok(ChatStream(data)),
       Err<Opened>(:final error) => Err(error),

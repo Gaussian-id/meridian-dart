@@ -176,11 +176,13 @@ final class Transport {
   Future<MeridianResult<Opened>> open(
     Call call, {
     Future<void>? abortTrigger,
+    bool headersOnly = false,
   }) async {
     // [1] Send one logical call, stopping retries before any success body is read.
     MeridianError? previous;
     for (var tried = 0;; tried++) {
-      final outcome = await _openOnce(call, abortTrigger: abortTrigger);
+      final outcome = await _openOnce(call,
+          abortTrigger: abortTrigger, headersOnly: headersOnly);
       if (outcome is Ok<Opened>) return outcome;
       final error = (outcome as Err<Opened>).error;
 
@@ -213,6 +215,7 @@ final class Transport {
   Future<MeridianResult<Opened>> _openOnce(
     Call call, {
     Future<void>? abortTrigger,
+    required bool headersOnly,
   }) async {
     // [1] Reject configuration and unencodable bodies before sending.
     if (_refusal != null) return Err(_refusal);
@@ -267,6 +270,7 @@ final class Transport {
     final response = (outcome as Ok<http.StreamedResponse>).data;
     final requestId = cleanRequestId(_header(response.headers, 'x-request-id'));
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (headersOnly) watch.stopTimeout();
       return Ok(Opened(response, requestId, watch));
     }
 

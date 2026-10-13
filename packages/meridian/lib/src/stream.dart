@@ -233,6 +233,10 @@ final class ChatStream extends Stream<ChatChunk> {
         return;
       }
     }
+    final safe = withoutPrices(decoded) as Map<String, Object?>;
+    // Preserve conforming wire bytes, including their original JSON spacing.
+    final safeJson = jsonEncode(safe);
+    final relayData = safeJson == jsonEncode(decoded) ? data : safeJson;
     ChatChunk? chunk;
     if (choices.isNotEmpty) {
       final first = choices.first;
@@ -246,10 +250,9 @@ final class ChatStream extends Stream<ChatChunk> {
         _malformed();
         return;
       }
-      chunk = ChatChunk(delta as String? ?? '',
-          withoutPrices(decoded) as Map<String, Object?>);
+      chunk = ChatChunk(delta as String? ?? '', safe);
     }
-    _events.add(_Event(data, chunk: chunk));
+    _events.add(_Event(relayData, chunk: chunk));
   }
 
   void _malformed() => _finish(

@@ -167,6 +167,39 @@ void main() {
     expect(sleeps, hasLength(2));
   });
 
+  test('a successful stream outlives its header timeout', () async {
+    engine.next(Scripted(
+        chunks: [frame(chunk('still working')).codeUnits], hang: true));
+    final result = await client(timeout: const Duration(milliseconds: 40))
+        .chat
+        .stream(prompt());
+    expect(result, isA<Ok<ChatStream>>());
+    final stream = (result as Ok<ChatStream>).data;
+    final first = Completer<void>();
+    var ended = false;
+    final subscription = stream.listen((_) => first.complete());
+    addTearDown(() async {
+      await stream.cancel();
+      await subscription.cancel();
+    });
+    unawaited(stream.done.then((_) => ended = true));
+
+    await first.future.timeout(const Duration(seconds: 1));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(ended, isFalse);
+    expect(stream.error, isNull);
+  });
+
+  test('a buffered JSON response keeps its body timeout', () async {
+    engine.next(Scripted(json: completion(), hang: true));
+    final result = await client(
+      timeout: const Duration(milliseconds: 40),
+      maxRetries: 0,
+    ).chat.create(prompt()).timeout(const Duration(seconds: 1));
+    expect(result, isA<Err<ChatCompletion>>());
+    expect((result as Err<ChatCompletion>).error.code, 'network_error');
+  });
+
   test('a network failure followed by success returns the completion',
       () async {
     engine.next(const Scripted(networkError: true),

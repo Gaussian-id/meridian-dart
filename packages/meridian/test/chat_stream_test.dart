@@ -286,6 +286,46 @@ void main() {
     expect(await stream.done, isNull);
   });
 
+  test('relay strips nested prices and unsafe request ids from success data',
+      () async {
+    final first = chunk('safe')
+      ..['supplier_price'] = 12
+      ..['request_id'] = 'bad\nheader'
+      ..['metadata'] = {
+        'keep': true,
+        'nested': {
+          'total_cost': 3,
+          'request_id': 'bad\rheader',
+          'safe': 'value',
+        },
+      };
+    final finalUsage = usageChunk()
+      ..['usage'] = {
+        'prompt_tokens': 3,
+        'completion_tokens': 2,
+        'total_tokens': 5,
+        'provider_cost': 4,
+      };
+    answer('${frame(first)}${frame(finalUsage)}${frame('[DONE]')}');
+    final stream = await start();
+
+    final wire = utf8.decode(
+        await stream.relay((_) => null).expand((bytes) => bytes).toList());
+    final decoder = SseDecoder();
+    final events = decoder.add(utf8.encode(wire));
+    expect(events, hasLength(3));
+    expect(events.last, '[DONE]');
+    expect(jsonDecode(events.first), {
+      ...chunk('safe'),
+      'metadata': {
+        'keep': true,
+        'nested': {'safe': 'value'},
+      },
+    });
+    expect(jsonDecode(events[1]), usageChunk());
+    expect(await stream.done, isNull);
+  });
+
   test('relay turns truncation into a terminal error frame', () async {
     answer(frame(chunk('partial')));
     final stream = await start();
