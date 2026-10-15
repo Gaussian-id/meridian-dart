@@ -9,25 +9,25 @@ Until publication, add a path dependency from an app beside this checkout:
 ```yaml
 # Dart server pubspec.yaml
 dependencies:
-  meridian:
-    path: ../meridian-dart/packages/meridian
+  gauss_meridian:
+    path: ../meridian-dart/packages/gauss_meridian
 ```
 
 ```yaml
 # Flutter app pubspec.yaml
 dependencies:
-  meridian_flutter:
-    path: ../meridian-dart/packages/meridian_flutter
+  gauss_meridian_flutter:
+    path: ../meridian-dart/packages/gauss_meridian_flutter
 ```
 
 Run `dart pub get` or `flutter pub get` in the corresponding app; adjust the path if needed. After owner decision O47 and publication, use `dart pub add meridian` or `flutter pub add meridian_flutter`. Those pub.dev commands cannot be verified until publication.
 
 ## Three entry points
 
-On a Dart server, import `package:meridian/meridian.dart`. Set `MERIDIAN_URL` and `MERIDIAN_KEY` in the server environment, or pass `url:` and `key:` to `Meridian`. Keep the project key off client devices.
+On a Dart server, import `package:gauss_meridian/gauss_meridian.dart`. Set `MERIDIAN_URL` and `MERIDIAN_KEY` in the server environment, or pass `url:` and `key:` to `Meridian`. Keep the project key off client devices.
 
 ```dart
-import 'package:meridian/meridian.dart';
+import 'package:gauss_meridian/gauss_meridian.dart';
 
 Future<String> serverExample() async {
   final client = Meridian();
@@ -45,10 +45,10 @@ Future<String> serverExample() async {
 }
 ```
 
-For a browser, import `package:meridian/browser.dart`. `MeridianBrowser` requires an **absolute** backend route and sends no project key or authorization header. For Flutter, change the import below to `package:meridian_flutter/meridian_flutter.dart`; that entry point exports the same browser client and chat types.
+For a browser, import `package:gauss_meridian/browser.dart`. `MeridianBrowser` requires an **absolute** backend route and sends no project key or authorization header. For Flutter, change the import below to `package:gauss_meridian_flutter/gauss_meridian_flutter.dart`; that entry point exports the same browser client and chat types.
 
 ```dart
-import 'package:meridian/browser.dart';
+import 'package:gauss_meridian/browser.dart';
 
 Future<String> browserExample() async {
   final client = MeridianBrowser(
@@ -68,10 +68,10 @@ Future<String> browserExample() async {
 }
 ```
 
-On a trusted server, import `package:meridian/admin.dart`. Set `MERIDIAN_ADMIN_URL` and `MERIDIAN_INTEGRATOR_KEY`, or pass `url:` and `key:` to `MeridianAdmin`. It implements the 24 pinned integrator operations. Keep this key-issuance function on the backend and persist the issued secret before returning to an app user.
+On a trusted server, import `package:gauss_meridian/admin.dart`. Set `MERIDIAN_ADMIN_URL` and `MERIDIAN_INTEGRATOR_KEY`, or pass `url:` and `key:` to `MeridianAdmin`. It implements the 24 pinned integrator operations. Keep this key-issuance function on the backend and persist the issued secret before returning to an app user.
 
 ```dart
-import 'package:meridian/admin.dart';
+import 'package:gauss_meridian/admin.dart';
 
 Future<void> issueProjectKey(
   String orgId,
@@ -105,7 +105,7 @@ Omit `model` to let Meridian choose (`meridian/auto`). For a specific effort lev
 `chat.stream` returns `Ok<ChatStream>` when response headers arrive. Each stream is single-use: choose `await for`, `text()`, or `StreamBuilder`. `done` resolves to `null` only after `[DONE]`; otherwise it returns a typed error. `cancel()` aborts upstream.
 
 ```dart
-import 'package:meridian/browser.dart';
+import 'package:gauss_meridian/browser.dart';
 
 Future<String> streamedText(MeridianBrowser client) async {
   final opened = await client.chat.stream(
@@ -133,11 +133,11 @@ To collect text instead, call `await stream.text()` and switch on `Ok<String>` o
 
 ## Forward through your backend
 
-`package:meridian/shelf.dart` provides a Shelf handler. Authenticate the app user before spending the server's project credit. `authorize` must return `true` or a Shelf `Response`; other values are denied. This example expects upstream authentication middleware to set `request.context['authorized']`:
+`package:gauss_meridian/shelf.dart` provides a Shelf handler. Authenticate the app user before spending the server's project credit. `authorize` must return `true` or a Shelf `Response`; other values are denied. This example expects upstream authentication middleware to set `request.context['authorized']`:
 
 ```dart
-import 'package:meridian/meridian.dart';
-import 'package:meridian/shelf.dart';
+import 'package:gauss_meridian/gauss_meridian.dart';
+import 'package:gauss_meridian/shelf.dart';
 import 'package:shelf/shelf.dart';
 
 final Handler chatHandler = meridianForwardHandler(

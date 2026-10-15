@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:meridian/meridian.dart';
+import 'package:gauss_meridian/gauss_meridian.dart';
 import 'package:test/test.dart';
 
 void main() {

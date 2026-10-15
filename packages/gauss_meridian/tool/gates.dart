@@ -18,7 +18,7 @@ Future<int> runFlutterGate(List<String> arguments) async {
     final process = await Process.start(
       'flutter',
       arguments,
-      workingDirectory: '../meridian_flutter',
+      workingDirectory: '../gauss_meridian_flutter',
       mode: ProcessStartMode.inheritStdio,
       runInShell: Platform.isWindows,
     );
@@ -60,7 +60,7 @@ Future<void> main() async {
     }
   }
   // [4] Flutter analysis and widget tests are required once its package exists.
-  if (File('../meridian_flutter/pubspec.yaml').existsSync()) {
+  if (File('../gauss_meridian_flutter/pubspec.yaml').existsSync()) {
     if (!await flutterOnPath()) {
       print('Flutter is not on PATH; the Flutter gate cannot pass.');
       exit(1);

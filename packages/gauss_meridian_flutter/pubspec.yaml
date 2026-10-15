@@ -1,4 +1,4 @@
-name: meridian_flutter
+name: gauss_meridian_flutter
 version: 0.0.0
 publish_to: none
 environment:
@@ -7,8 +7,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  meridian:
-    path: ../meridian
+  gauss_meridian:
+    path: ../gauss_meridian
 dev_dependencies:
   flutter_test:
     sdk: flutter

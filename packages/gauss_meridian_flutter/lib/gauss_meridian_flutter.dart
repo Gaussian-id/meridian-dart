@@ -4,4 +4,4 @@
 /// your backend route uses HTTP rather than HTTPS.
 library;
 
-export 'package:meridian/browser.dart';
+export 'package:gauss_meridian/browser.dart';

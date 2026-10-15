@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:meridian/meridian.dart';
+import 'package:gauss_meridian/gauss_meridian.dart';
 import 'package:test/test.dart' hide completion;
 
 import 'support/fake_engine.dart';

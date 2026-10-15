@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:meridian/meridian.dart';
-import 'package:meridian/shelf.dart';
+import 'package:gauss_meridian/gauss_meridian.dart';
+import 'package:gauss_meridian/shelf.dart';
 import 'package:shelf/shelf.dart' show Handler, Request, Response;
 import 'package:test/test.dart' hide completion;
 

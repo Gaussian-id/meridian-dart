@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:meridian/admin.dart' as admin;
-import 'package:meridian/meridian.dart' as server;
-import 'package:meridian_flutter/meridian_flutter.dart';
+import 'package:gauss_meridian/admin.dart' as admin;
+import 'package:gauss_meridian/gauss_meridian.dart' as server;
+import 'package:gauss_meridian_flutter/gauss_meridian_flutter.dart';
 
-import '../../meridian/test/support/fake_engine.dart';
+import '../../gauss_meridian/test/support/fake_engine.dart';
 
 void main() {
   const route = 'https://example.com/api/meridian/chat';
@@ -157,18 +157,18 @@ void main() {
   });
 
   test('Flutter entry library reaches only the browser API', () {
-    final source = File('lib/meridian_flutter.dart').readAsStringSync();
+    final source = File('lib/gauss_meridian_flutter.dart').readAsStringSync();
     final directive = RegExp(r'''\b(?:import|export)\s+['"]([^'"]+)['"]''');
     final imports = directive
         .allMatches(source)
         .map((match) => match.group(1))
         .toSet();
 
-    expect(imports, contains('package:meridian/browser.dart'));
+    expect(imports, contains('package:gauss_meridian/browser.dart'));
     expect(
       imports,
       everyElement(
-        anyOf('package:meridian/browser.dart', startsWith('package:flutter/')),
+        anyOf('package:gauss_meridian/browser.dart', startsWith('package:flutter/')),
       ),
     );
   });

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:meridian/admin.dart';
+import 'package:gauss_meridian/admin.dart';
 import 'package:test/test.dart';
 
 import 'support/fake_engine.dart';

@@ -1,5 +1,5 @@
-import 'package:meridian/src/clock.dart' as clock;
-import 'package:meridian/src/env.dart' as env;
+import 'package:gauss_meridian/src/clock.dart' as clock;
+import 'package:gauss_meridian/src/env.dart' as env;
 import 'package:test/test.dart';
 
 /// Record requested sleeps and restore the clock after the current test.

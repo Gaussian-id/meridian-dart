@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:meridian/src/sse.dart';
+import 'package:gauss_meridian/src/sse.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -28,7 +28,7 @@ Set<String> reachableLibraries(String entryFile) {
         if (uri.startsWith('package:')) {
           final packageUri = Uri.parse(uri);
           final parts = packageUri.pathSegments;
-          if (parts.first == 'meridian') {
+          if (parts.first == 'gauss_meridian') {
             pending.add(File.fromUri(
                 root.uri.resolve('lib/${parts.skip(1).join('/')}')));
           } else {

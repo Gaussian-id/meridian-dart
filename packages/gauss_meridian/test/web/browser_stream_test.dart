@@ -3,8 +3,8 @@ library;
 
 import 'dart:async';
 
-import 'package:meridian/browser.dart';
-import 'package:meridian/meridian.dart' as server;
+import 'package:gauss_meridian/browser.dart';
+import 'package:gauss_meridian/gauss_meridian.dart' as server;
 import 'package:test/test.dart';
 
 void main() {

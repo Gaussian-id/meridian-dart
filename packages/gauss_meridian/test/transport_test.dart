@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:meridian/meridian.dart';
-import 'package:meridian/src/clock.dart' as clock;
+import 'package:gauss_meridian/gauss_meridian.dart';
+import 'package:gauss_meridian/src/clock.dart' as clock;
 import 'package:test/test.dart' hide completion;
 
 import 'support/fake_engine.dart';

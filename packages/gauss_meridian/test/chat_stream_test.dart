@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:meridian/meridian.dart';
-import 'package:meridian/src/sse.dart';
+import 'package:gauss_meridian/gauss_meridian.dart';
+import 'package:gauss_meridian/src/sse.dart';
 import 'package:test/test.dart';
 
 import 'support/fake_engine.dart';

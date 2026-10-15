@@ -24,7 +24,7 @@ void main() {
   });
 
   test('server entry does not reach admin or forwarding implementation', () {
-    final paths = reachableLibraries('lib/meridian.dart');
+    final paths = reachableLibraries('lib/gauss_meridian.dart');
     expect(
         paths,
         containsAll([
