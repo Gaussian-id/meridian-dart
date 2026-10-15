@@ -15,16 +15,16 @@ import 'version.dart';
 /// Integrator-key client for the Meridian admin API.
 final class MeridianAdmin {
   MeridianAdmin._(this._transport)
-      : orgs = AdminOrgs(_transport),
-        projects = AdminProjects(_transport),
-        keys = AdminKeys(_transport),
-        providerCredentials = AdminProviderCredentials(_transport),
-        projectModels = AdminProjectModels(_transport),
-        catalogue = AdminCatalogue(_transport),
-        models = AdminModels(_transport),
-        analytics = AdminAnalytics(_transport),
-        logs = AdminLogs(_transport),
-        routingRecords = AdminRoutingRecords(_transport);
+    : orgs = AdminOrgs(_transport),
+      projects = AdminProjects(_transport),
+      keys = AdminKeys(_transport),
+      providerCredentials = AdminProviderCredentials(_transport),
+      projectModels = AdminProjectModels(_transport),
+      catalogue = AdminCatalogue(_transport),
+      models = AdminModels(_transport),
+      analytics = AdminAnalytics(_transport),
+      logs = AdminLogs(_transport),
+      routingRecords = AdminRoutingRecords(_transport);
 
   /// Creates an admin client from explicit options or environment values.
   factory MeridianAdmin({
@@ -37,7 +37,8 @@ final class MeridianAdmin {
     // [1] Refuse browser and Flutter runtimes before reading configuration.
     if (adminRuntimeRefusal != null) {
       return MeridianAdmin._(
-          Transport.refused(configError(adminRuntimeRefusal!)));
+        Transport.refused(configError(adminRuntimeRefusal!)),
+      );
     }
     final endpoint = url ?? envReader('MERIDIAN_ADMIN_URL');
     final credential = key ?? envReader('MERIDIAN_INTEGRATOR_KEY');
@@ -51,14 +52,16 @@ final class MeridianAdmin {
       return MeridianAdmin._(Transport.refused(configError(keyError)));
     }
     // [3] Share the admin transport across the ten operation groups.
-    return MeridianAdmin._(Transport(
-      baseUrl: endpoint!,
-      key: credential,
-      timeout: timeout,
-      maxRetries: maxRetries,
-      httpClient: httpClient,
-      userAgent: 'meridian-dart/$meridianVersion',
-    ));
+    return MeridianAdmin._(
+      Transport(
+        baseUrl: endpoint!,
+        key: credential,
+        timeout: timeout,
+        maxRetries: maxRetries,
+        httpClient: httpClient,
+        userAgent: 'meridian-dart/$meridianVersion',
+      ),
+    );
   }
 
   final Transport _transport;
@@ -121,19 +124,27 @@ Future<MeridianResult<T>> _request<T>(
   final value = (reply as Ok<JsonReply>).data;
   final parsed = parse(withoutPrices(value.value));
   if (parsed == null) {
-    return Err(clientError(
-        'network_error', 'The admin response did not have the expected shape.',
-        requestId: value.requestId));
+    return Err(
+      clientError(
+        'network_error',
+        'The admin response did not have the expected shape.',
+        requestId: value.requestId,
+      ),
+    );
   }
   return Ok(parsed);
 }
 
 Future<MeridianResult<void>> _delete(
-    Transport transport, String template, List<String> ids) async {
+  Transport transport,
+  String template,
+  List<String> ids,
+) async {
   final resolved = route(template, ids);
   if (resolved is Err<String>) return Err(resolved.error);
-  final reply = await transport
-      .json(Call(method: 'DELETE', path: (resolved as Ok<String>).data));
+  final reply = await transport.json(
+    Call(method: 'DELETE', path: (resolved as Ok<String>).data),
+  );
   if (reply is Err<JsonReply>) return Err(reply.error);
   return const Ok<void>(null);
 }
@@ -141,8 +152,11 @@ Future<MeridianResult<void>> _delete(
 String _withQuery(String path, Map<String, String?> values) {
   final entries = values.entries
       .where((entry) => entry.value != null)
-      .map((entry) => '${Uri.encodeComponent(entry.key)}='
-          '${Uri.encodeComponent(entry.value!)}');
+      .map(
+        (entry) =>
+            '${Uri.encodeComponent(entry.key)}='
+            '${Uri.encodeComponent(entry.value!)}',
+      );
   final encoded = entries.join('&');
   return encoded.isEmpty ? path : '$path?$encoded';
 }
@@ -166,28 +180,40 @@ final class AdminOrgs {
 
   /// Lists organisations.
   Future<MeridianResult<List<OrganisationBody>>> list() => _request(
-      _transport,
-      'GET',
-      '/v1/orgs',
-      const [],
-      (value) => _parseList(value, OrganisationBody.tryParse));
+    _transport,
+    'GET',
+    '/v1/orgs',
+    const [],
+    (value) => _parseList(value, OrganisationBody.tryParse),
+  );
 
   /// Creates an organisation, retrying only with a stable external reference.
   Future<MeridianResult<OrganisationBody>> create(CreateOrganisation body) =>
       _request(
-          _transport, 'POST', '/v1/orgs', const [], OrganisationBody.tryParse,
-          body: body.toJson(),
-          hasBody: true,
-          retry: body.externalReference?.isNotEmpty ?? false);
+        _transport,
+        'POST',
+        '/v1/orgs',
+        const [],
+        OrganisationBody.tryParse,
+        body: body.toJson(),
+        hasBody: true,
+        retry: body.externalReference?.isNotEmpty ?? false,
+      );
 
   /// Fetches an organisation by its external reference.
   Future<MeridianResult<OrganisationBody>> getByReference(String reference) =>
-      _request(_transport, 'GET', '/v1/orgs/by-reference/{}', [reference],
-          OrganisationBody.tryParse);
+      _request(_transport, 'GET', '/v1/orgs/by-reference/{}', [
+        reference,
+      ], OrganisationBody.tryParse);
 
   /// Fetches an organisation by id.
   Future<MeridianResult<OrganisationBody>> get(String org) => _request(
-      _transport, 'GET', '/v1/orgs/{}', [org], OrganisationBody.tryParse);
+    _transport,
+    'GET',
+    '/v1/orgs/{}',
+    [org],
+    OrganisationBody.tryParse,
+  );
 }
 
 /// Project operations available to an integrator key.
@@ -198,29 +224,47 @@ final class AdminProjects {
 
   /// Lists projects in one organisation.
   Future<MeridianResult<List<ProjectBody>>> list(String org) => _request(
-      _transport,
-      'GET',
-      '/v1/orgs/{}/projects',
-      [org],
-      (value) => _parseList(value, ProjectBody.tryParse));
+    _transport,
+    'GET',
+    '/v1/orgs/{}/projects',
+    [org],
+    (value) => _parseList(value, ProjectBody.tryParse),
+  );
 
   /// Creates a project without retrying transient server failures.
   Future<MeridianResult<ProjectBody>> create(String org, CreateProject body) =>
-      _request(_transport, 'POST', '/v1/orgs/{}/projects', [org],
-          ProjectBody.tryParse,
-          body: body.toJson(), hasBody: true, retry: false);
+      _request(
+        _transport,
+        'POST',
+        '/v1/orgs/{}/projects',
+        [org],
+        ProjectBody.tryParse,
+        body: body.toJson(),
+        hasBody: true,
+        retry: false,
+      );
 
   /// Fetches one project.
   Future<MeridianResult<ProjectBody>> get(String org, String project) =>
-      _request(_transport, 'GET', '/v1/orgs/{}/projects/{}', [org, project],
-          ProjectBody.tryParse);
+      _request(_transport, 'GET', '/v1/orgs/{}/projects/{}', [
+        org,
+        project,
+      ], ProjectBody.tryParse);
 
   /// Updates exactly one project field.
   Future<MeridianResult<ProjectBody>> update(
-          String org, String project, UpdateProject body) =>
-      _request(_transport, 'PATCH', '/v1/orgs/{}/projects/{}', [org, project],
-          ProjectBody.tryParse,
-          body: body.toJson(), hasBody: true);
+    String org,
+    String project,
+    UpdateProject body,
+  ) => _request(
+    _transport,
+    'PATCH',
+    '/v1/orgs/{}/projects/{}',
+    [org, project],
+    ProjectBody.tryParse,
+    body: body.toJson(),
+    hasBody: true,
+  );
 
   /// Deletes one project.
   Future<MeridianResult<void>> delete(String org, String project) =>
@@ -235,20 +279,34 @@ final class AdminKeys {
 
   /// Lists keys without their secrets.
   Future<MeridianResult<List<KeyBody>>> list(String org, String project) =>
-      _request(_transport, 'GET', '/v1/orgs/{}/projects/{}/keys',
-          [org, project], (value) => _parseList(value, KeyBody.tryParse));
+      _request(_transport, 'GET', '/v1/orgs/{}/projects/{}/keys', [
+        org,
+        project,
+      ], (value) => _parseList(value, KeyBody.tryParse));
 
   /// Issues a key; rate limiting is the only retried failure.
   Future<MeridianResult<IssuedKey>> create(
-          String org, String project, IssueKey body) =>
-      _request(_transport, 'POST', '/v1/orgs/{}/projects/{}/keys',
-          [org, project], IssuedKey.tryParse,
-          body: body.toJson(), hasBody: true, retry: false);
+    String org,
+    String project,
+    IssueKey body,
+  ) => _request(
+    _transport,
+    'POST',
+    '/v1/orgs/{}/projects/{}/keys',
+    [org, project],
+    IssuedKey.tryParse,
+    body: body.toJson(),
+    hasBody: true,
+    retry: false,
+  );
 
   /// Revokes a key.
   Future<MeridianResult<void>> revoke(String org, String project, String key) =>
-      _delete(
-          _transport, '/v1/orgs/{}/projects/{}/keys/{}', [org, project, key]);
+      _delete(_transport, '/v1/orgs/{}/projects/{}/keys/{}', [
+        org,
+        project,
+        key,
+      ]);
 }
 
 /// Provider credential operations available to an integrator key.
@@ -259,22 +317,34 @@ final class AdminProviderCredentials {
 
   /// Lists credential metadata for an organisation.
   Future<MeridianResult<List<CredentialMetadata>>> list(String org) => _request(
-      _transport,
-      'GET',
-      '/v1/orgs/{}/provider-credentials',
-      [org],
-      (value) => _parseList(value, CredentialMetadata.tryParse));
+    _transport,
+    'GET',
+    '/v1/orgs/{}/provider-credentials',
+    [org],
+    (value) => _parseList(value, CredentialMetadata.tryParse),
+  );
 
   /// Sets one provider credential.
   Future<MeridianResult<CredentialMetadata>> put(
-          String org, String provider, SetCredential body) =>
-      _request(_transport, 'PUT', '/v1/orgs/{}/provider-credentials/{}',
-          [org, provider], CredentialMetadata.tryParse,
-          body: body.toJson(), hasBody: true);
+    String org,
+    String provider,
+    SetCredential body,
+  ) => _request(
+    _transport,
+    'PUT',
+    '/v1/orgs/{}/provider-credentials/{}',
+    [org, provider],
+    CredentialMetadata.tryParse,
+    body: body.toJson(),
+    hasBody: true,
+  );
 
   /// Deletes one provider credential.
   Future<MeridianResult<void>> delete(String org, String provider) => _delete(
-      _transport, '/v1/orgs/{}/provider-credentials/{}', [org, provider]);
+    _transport,
+    '/v1/orgs/{}/provider-credentials/{}',
+    [org, provider],
+  );
 }
 
 /// Project model allowlist operations.
@@ -285,15 +355,25 @@ final class AdminProjectModels {
 
   /// Fetches the current allowlist.
   Future<MeridianResult<ModelAllowlist>> get(String org, String project) =>
-      _request(_transport, 'GET', '/v1/orgs/{}/projects/{}/models',
-          [org, project], ModelAllowlist.tryParse);
+      _request(_transport, 'GET', '/v1/orgs/{}/projects/{}/models', [
+        org,
+        project,
+      ], ModelAllowlist.tryParse);
 
   /// Replaces the current allowlist.
   Future<MeridianResult<ModelAllowlist>> put(
-          String org, String project, List<String> models) =>
-      _request(_transport, 'PUT', '/v1/orgs/{}/projects/{}/models',
-          [org, project], ModelAllowlist.tryParse,
-          body: {'models': models}, hasBody: true);
+    String org,
+    String project,
+    List<String> models,
+  ) => _request(
+    _transport,
+    'PUT',
+    '/v1/orgs/{}/projects/{}/models',
+    [org, project],
+    ModelAllowlist.tryParse,
+    body: {'models': models},
+    hasBody: true,
+  );
 }
 
 /// Supplier catalogue operations.
@@ -304,16 +384,18 @@ final class AdminCatalogue {
 
   /// Fetches the active catalogue.
   Future<MeridianResult<SupplierCatalogueResponse>> active() => _request(
-      _transport,
-      'GET',
-      '/v1/catalogue',
-      const [],
-      SupplierCatalogueResponse.tryParse);
+    _transport,
+    'GET',
+    '/v1/catalogue',
+    const [],
+    SupplierCatalogueResponse.tryParse,
+  );
 
   /// Fetches one catalogue version.
   Future<MeridianResult<SupplierCatalogueResponse>> version(int version) =>
-      _request(_transport, 'GET', '/v1/catalogue/{}', ['$version'],
-          SupplierCatalogueResponse.tryParse);
+      _request(_transport, 'GET', '/v1/catalogue/{}', [
+        '$version',
+      ], SupplierCatalogueResponse.tryParse);
 }
 
 /// Admin model catalogue operations.
@@ -324,15 +406,21 @@ final class AdminModels {
 
   /// Lists all admin catalogue models.
   Future<MeridianResult<List<CatalogueModelBody>>> list() => _request(
-      _transport,
-      'GET',
-      '/v1/models',
-      const [],
-      (value) => _parseList(value, CatalogueModelBody.tryParse));
+    _transport,
+    'GET',
+    '/v1/models',
+    const [],
+    (value) => _parseList(value, CatalogueModelBody.tryParse),
+  );
 
   /// Fetches one model.
   Future<MeridianResult<CatalogueModelBody>> get(String model) => _request(
-      _transport, 'GET', '/v1/models/{}', [model], CatalogueModelBody.tryParse);
+    _transport,
+    'GET',
+    '/v1/models/{}',
+    [model],
+    CatalogueModelBody.tryParse,
+  );
 }
 
 /// Usage analytics operations.
@@ -342,11 +430,18 @@ final class AdminAnalytics {
   final Transport _transport;
 
   /// Fetches usage for a project and optional time range.
-  Future<MeridianResult<UsageReport>> usage(String projectId,
-          {String? from, String? to}) =>
-      _request(_transport, 'GET', '/v1/analytics/usage', const [],
-          UsageReport.tryParse,
-          query: {'project_id': projectId, 'from': from, 'to': to});
+  Future<MeridianResult<UsageReport>> usage(
+    String projectId, {
+    String? from,
+    String? to,
+  }) => _request(
+    _transport,
+    'GET',
+    '/v1/analytics/usage',
+    const [],
+    UsageReport.tryParse,
+    query: {'project_id': projectId, 'from': from, 'to': to},
+  );
 }
 
 /// Usage log operations.
@@ -356,14 +451,22 @@ final class AdminLogs {
   final Transport _transport;
 
   /// Fetches one page of logs for a project.
-  Future<MeridianResult<LogPage>> list(String projectId,
-          {int? pageSize, String? cursor}) =>
-      _request(_transport, 'GET', '/v1/logs', const [], LogPage.tryParse,
-          query: {
-            'project_id': projectId,
-            'page_size': pageSize?.toString(),
-            'cursor': cursor,
-          });
+  Future<MeridianResult<LogPage>> list(
+    String projectId, {
+    int? pageSize,
+    String? cursor,
+  }) => _request(
+    _transport,
+    'GET',
+    '/v1/logs',
+    const [],
+    LogPage.tryParse,
+    query: {
+      'project_id': projectId,
+      'page_size': pageSize?.toString(),
+      'cursor': cursor,
+    },
+  );
 }
 
 /// Routing-record operations.
@@ -373,9 +476,15 @@ final class AdminRoutingRecords {
   final Transport _transport;
 
   /// Fetches a routing record in a project.
-  Future<MeridianResult<RoutingRecordBody>> get(String requestId,
-          {required String projectId}) =>
-      _request(_transport, 'GET', '/v1/routing-records/{}', [requestId],
-          RoutingRecordBody.tryParse,
-          query: {'project_id': projectId});
+  Future<MeridianResult<RoutingRecordBody>> get(
+    String requestId, {
+    required String projectId,
+  }) => _request(
+    _transport,
+    'GET',
+    '/v1/routing-records/{}',
+    [requestId],
+    RoutingRecordBody.tryParse,
+    query: {'project_id': projectId},
+  );
 }

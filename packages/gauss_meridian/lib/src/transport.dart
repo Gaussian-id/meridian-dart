@@ -17,8 +17,8 @@ final class Call {
     this.query = const {},
     this.headers = const {},
     this.retry = true,
-  })  : body = null,
-        hasBody = false;
+  }) : body = null,
+       hasBody = false;
 
   /// Creates a call with a JSON-encoded body.
   const Call.json({
@@ -58,10 +58,12 @@ final class AttemptWatch {
   AttemptWatch(Duration timeout, Future<void>? caller) {
     // [1] Turn the deadline into a typed network error.
     _timer = Timer(timeout, () {
-      _end(clientError(
-        'network_error',
-        'No response within ${timeout.inSeconds} s.',
-      ));
+      _end(
+        clientError(
+          'network_error',
+          'No response within ${timeout.inSeconds} s.',
+        ),
+      );
     });
     // [2] Observe caller cancellation without introducing an error future.
     if (caller != null) {
@@ -142,23 +144,23 @@ final class Transport {
     int? maxRetries,
     http.Client? httpClient,
     String? userAgent,
-  })  : _baseUrl = baseUrl,
-        _key = key,
-        _timeout = saneTimeout(timeout),
-        _maxRetries = saneRetries(maxRetries),
-        _client = httpClient ?? http.Client(),
-        _userAgent = userAgent,
-        _refusal = null;
+  }) : _baseUrl = baseUrl,
+       _key = key,
+       _timeout = saneTimeout(timeout),
+       _maxRetries = saneRetries(maxRetries),
+       _client = httpClient ?? http.Client(),
+       _userAgent = userAgent,
+       _refusal = null;
 
   /// Creates a transport that returns the same configuration refusal.
   Transport.refused(MeridianError error)
-      : _baseUrl = '',
-        _key = null,
-        _timeout = defaultTimeout,
-        _maxRetries = defaultMaxRetries,
-        _client = http.Client(),
-        _userAgent = null,
-        _refusal = error;
+    : _baseUrl = '',
+      _key = null,
+      _timeout = defaultTimeout,
+      _maxRetries = defaultMaxRetries,
+      _client = http.Client(),
+      _userAgent = null,
+      _refusal = error;
 
   final String _baseUrl;
   final String? _key;
@@ -180,9 +182,12 @@ final class Transport {
   }) async {
     // [1] Send one logical call, stopping retries before any success body is read.
     MeridianError? previous;
-    for (var tried = 0;; tried++) {
-      final outcome = await _openOnce(call,
-          abortTrigger: abortTrigger, headersOnly: headersOnly);
+    for (var tried = 0; ; tried++) {
+      final outcome = await _openOnce(
+        call,
+        abortTrigger: abortTrigger,
+        headersOnly: headersOnly,
+      );
       if (outcome is Ok<Opened>) return outcome;
       final error = (outcome as Err<Opened>).error;
 
@@ -204,10 +209,7 @@ final class Transport {
         onError: (Object _) =>
             clientError('aborted', 'The call was cancelled.'),
       );
-      final reason = await Future.any<MeridianError?>([
-        delayed,
-        if (aborted != null) aborted,
-      ]);
+      final reason = await Future.any<MeridianError?>([delayed, ?aborted]);
       if (reason != null) return Err(reason);
     }
   }
@@ -232,10 +234,9 @@ final class Transport {
     final resolved = base.resolve(call.path);
     final url = call.query.isEmpty
         ? resolved
-        : resolved.replace(queryParameters: {
-            ...resolved.queryParameters,
-            ...call.query,
-          });
+        : resolved.replace(
+            queryParameters: {...resolved.queryParameters, ...call.query},
+          );
     final watch = AttemptWatch(_timeout, abortTrigger);
     final request = http.AbortableRequest(
       call.method,
@@ -278,12 +279,14 @@ final class Transport {
     final text = await _readBody(response.stream, watch, requestId);
     watch.close();
     if (text is Err<String>) return Err(text.error);
-    return Err(errorFromBody(
-      response.statusCode,
-      requestId,
-      (text as Ok<String>).data,
-      retryAfter: retryAfter(_header(response.headers, 'retry-after')),
-    ));
+    return Err(
+      errorFromBody(
+        response.statusCode,
+        requestId,
+        (text as Ok<String>).data,
+        retryAfter: retryAfter(_header(response.headers, 'retry-after')),
+      ),
+    );
   }
 
   /// Return a JSON reply, with HTTP and decode failures as typed errors.
@@ -295,8 +298,11 @@ final class Transport {
     final opened = await open(call, abortTrigger: abortTrigger);
     if (opened is Err<Opened>) return Err(opened.error);
     final value = (opened as Ok<Opened>).data;
-    final body =
-        await _readBody(value.response.stream, value.watch, value.requestId);
+    final body = await _readBody(
+      value.response.stream,
+      value.watch,
+      value.requestId,
+    );
     value.watch.close();
     if (body is Err<String>) return Err(body.error);
     if (value.response.statusCode == 204) {
@@ -309,19 +315,19 @@ final class Transport {
     try {
       decoded = jsonDecode(text);
     } on FormatException {
-      return Err(clientError(
-        'network_error',
-        'The response was not valid JSON.',
-        status: value.response.statusCode,
-        requestId: value.requestId,
-      ));
+      return Err(
+        clientError(
+          'network_error',
+          'The response was not valid JSON.',
+          status: value.response.statusCode,
+          requestId: value.requestId,
+        ),
+      );
     }
     if (decoded is Map<String, Object?> && decoded.containsKey('error')) {
-      return Err(errorFromBody(
-        value.response.statusCode,
-        value.requestId,
-        text,
-      ));
+      return Err(
+        errorFromBody(value.response.statusCode, value.requestId, text),
+      );
     }
     return Ok(JsonReply(decoded, value.requestId));
   }
@@ -340,12 +346,18 @@ Future<MeridianResult<String>> _readBody(
   String? requestId,
 ) async {
   // [1] Convert the byte stream while consuming stream errors as typed results.
-  final read = utf8.decoder.bind(stream).join().then<MeridianResult<String>>(
+  final read = utf8.decoder
+      .bind(stream)
+      .join()
+      .then<MeridianResult<String>>(
         (text) => Ok(text),
         onError: (Object error, StackTrace _) => Err<String>(
           watch.error ??
-              clientError('network_error', 'The response body was interrupted.',
-                  requestId: requestId),
+              clientError(
+                'network_error',
+                'The response body was interrupted.',
+                requestId: requestId,
+              ),
         ),
       );
   // [2] Keep a noncooperative client from holding the call past its deadline.

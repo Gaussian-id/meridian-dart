@@ -21,10 +21,10 @@ final class CreateOrganisation {
 
   /// Encodes only the supplied optional fields.
   Map<String, Object?> toJson() => <String, Object?>{
-        'name': name,
-        if (slug != null) 'slug': slug,
-        if (externalReference != null) 'external_reference': externalReference,
-      };
+    'name': name,
+    if (slug != null) 'slug': slug,
+    if (externalReference != null) 'external_reference': externalReference,
+  };
 }
 
 /// The request body for creating a project.
@@ -54,11 +54,11 @@ final class UpdateProject {
 
   /// Sets or clears the default model; null explicitly clears it.
   const UpdateProject.defaultModel(String? value)
-      : this._('default_model', value);
+    : this._('default_model', value);
 
   /// Updates the default effort.
   const UpdateProject.defaultEffort(String value)
-      : this._('default_effort', value);
+    : this._('default_effort', value);
 
   final String _field;
   final Object? _value;
@@ -107,12 +107,11 @@ final class IssueKey {
 
   /// Encodes only the supplied fields.
   Map<String, Object?> toJson() => <String, Object?>{
-        if (name != null) 'name': name,
-        if (expiresInDays != null) 'expires_in_days': expiresInDays,
-        if (rateLimitPerMinute != null)
-          'rate_limit_per_minute': rateLimitPerMinute,
-        if (rateLimitPerDay != null) 'rate_limit_per_day': rateLimitPerDay,
-      };
+    if (name != null) 'name': name,
+    if (expiresInDays != null) 'expires_in_days': expiresInDays,
+    if (rateLimitPerMinute != null) 'rate_limit_per_minute': rateLimitPerMinute,
+    if (rateLimitPerDay != null) 'rate_limit_per_day': rateLimitPerDay,
+  };
 }
 
 /// The request body for setting a provider credential.
@@ -131,7 +130,7 @@ final class SetCredential {
 
   /// Encodes the credential and any supplied policy.
   Map<String, Object?> toJson() => <String, Object?>{
-        'credential': credential,
-        if (policy != null) 'policy': policy,
-      };
+    'credential': credential,
+    if (policy != null) 'policy': policy,
+  };
 }

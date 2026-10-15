@@ -31,9 +31,7 @@ final class _Event {
 /// A single-use chat stream with typed terminal state and usage.
 final class ChatStream extends Stream<ChatChunk> {
   /// Takes ownership of an opened streaming HTTP response.
-  ChatStream(Opened opened)
-      : _opened = opened,
-        requestId = opened.requestId {
+  ChatStream(Opened opened) : _opened = opened, requestId = opened.requestId {
     _events = StreamController<_Event>(
       onListen: _start,
       onPause: () => _upstream?.pause(),
@@ -42,10 +40,12 @@ final class ChatStream extends Stream<ChatChunk> {
         if (!_terminal) return cancel();
       },
     );
-    unawaited(opened.watch.ended.then((reason) {
-      if (_terminal) return;
-      _finish(_withRequestId(reason), stopUpstream: true);
-    }));
+    unawaited(
+      opened.watch.ended.then((reason) {
+        if (_terminal) return;
+        _finish(_withRequestId(reason), stopUpstream: true);
+      }),
+    );
   }
 
   final Opened _opened;
@@ -88,8 +88,12 @@ final class ChatStream extends Stream<ChatChunk> {
     return _events.stream
         .where((event) => event.chunk != null)
         .map((event) => event.chunk!)
-        .listen(onData,
-            onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+        .listen(
+          onData,
+          onError: onError,
+          onDone: onDone,
+          cancelOnError: cancelOnError,
+        );
   }
 
   /// Collect text once; repeated calls return the same result future.
@@ -97,7 +101,8 @@ final class ChatStream extends Stream<ChatChunk> {
     if (_textFuture != null) return _textFuture!;
     if (_claimed) {
       return Future.value(
-          Err(clientError('aborted', 'This stream was already read.')));
+        Err(clientError('aborted', 'This stream was already read.')),
+      );
     }
     return _textFuture = _collectText();
   }
@@ -114,16 +119,17 @@ final class ChatStream extends Stream<ChatChunk> {
   Future<void> cancel() async {
     if (!_terminal) {
       _finish(
-          clientError('aborted', 'The call was cancelled.',
-              requestId: requestId),
-          stopUpstream: true);
+        clientError('aborted', 'The call was cancelled.', requestId: requestId),
+        stopUpstream: true,
+      );
     }
     await _upstream?.cancel();
   }
 
   /// Re-encode events for the forwarding handler, replacing selected errors.
   Stream<List<int>> relay(
-      MeridianError? Function(MeridianError) replace) async* {
+    MeridianError? Function(MeridianError) replace,
+  ) async* {
     _claim();
     await for (final event in _events.stream) {
       var data = event.data;
@@ -147,8 +153,10 @@ final class ChatStream extends Stream<ChatChunk> {
     _upstream = _opened.response.stream.listen(
       _receive,
       onError: (Object _) => _finish(
-        _withRequestId(_opened.watch.error ??
-            clientError('network_error', 'The stream connection was lost.')),
+        _withRequestId(
+          _opened.watch.error ??
+              clientError('network_error', 'The stream connection was lost.'),
+        ),
         stopUpstream: true,
       ),
       onDone: () {
@@ -157,8 +165,13 @@ final class ChatStream extends Stream<ChatChunk> {
           _receiveEvent(data);
           if (_terminal) return;
         }
-        _finish(clientError('network_error', 'The stream ended without [DONE].',
-            requestId: requestId));
+        _finish(
+          clientError(
+            'network_error',
+            'The stream ended without [DONE].',
+            requestId: requestId,
+          ),
+        );
       },
       cancelOnError: false,
     );
@@ -172,9 +185,13 @@ final class ChatStream extends Stream<ChatChunk> {
     }
     if (_decoder.tooLarge) {
       _finish(
-          clientError('network_error', 'The stream event was too large.',
-              requestId: requestId),
-          stopUpstream: true);
+        clientError(
+          'network_error',
+          'The stream event was too large.',
+          requestId: requestId,
+        ),
+        stopUpstream: true,
+      );
     }
   }
 
@@ -204,8 +221,10 @@ final class ChatStream extends Stream<ChatChunk> {
         _malformed();
         return;
       }
-      final engineError =
-          errorFromEnvelope(envelope, headerRequestId: requestId);
+      final engineError = errorFromEnvelope(
+        envelope,
+        headerRequestId: requestId,
+      );
       _engineEnd = true;
       var relayData = data;
       final rawId = envelope['request_id'];
@@ -256,15 +275,18 @@ final class ChatStream extends Stream<ChatChunk> {
   }
 
   void _malformed() => _finish(
-        clientError('network_error', 'The stream event was not valid JSON.',
-            requestId: requestId),
-        stopUpstream: true,
-      );
+    clientError(
+      'network_error',
+      'The stream event was not valid JSON.',
+      requestId: requestId,
+    ),
+    stopUpstream: true,
+  );
 
   MeridianError _withRequestId(MeridianError value) =>
       value.requestId == null && requestId != null
-          ? value.copyWith(requestId: requestId)
-          : value;
+      ? value.copyWith(requestId: requestId)
+      : value;
 
   void _finish(MeridianError? end, {bool stopUpstream = false}) {
     if (_terminal) return;

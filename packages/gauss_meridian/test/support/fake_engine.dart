@@ -117,22 +117,28 @@ final class FakeEngine {
   ) async {
     // [1] Record the outgoing request and select its scripted response.
     final body = await utf8.decoder.bind(requestBody).join();
-    requests.add(RecordedRequest(
-      request.method,
-      request.url,
-      Map<String, String>.of(request.headers),
-      body,
-    ));
-    final answer =
-        _answers.isEmpty ? Scripted(json: completion()) : _answers.removeAt(0);
-    final abortTrigger =
-        request is http.Abortable ? request.abortTrigger : null;
+    requests.add(
+      RecordedRequest(
+        request.method,
+        request.url,
+        Map<String, String>.of(request.headers),
+        body,
+      ),
+    );
+    final answer = _answers.isEmpty
+        ? Scripted(json: completion())
+        : _answers.removeAt(0);
+    final abortTrigger = request is http.Abortable
+        ? request.abortTrigger
+        : null;
     var aborted = false;
     if (abortTrigger != null) {
-      unawaited(abortTrigger.then((_) {
-        aborted = true;
-        aborts++;
-      }));
+      unawaited(
+        abortTrigger.then((_) {
+          aborted = true;
+          aborts++;
+        }),
+      );
     }
 
     // [2] Emulate a network failure or a request stalled before headers.
@@ -147,11 +153,12 @@ final class FakeEngine {
 
     // [3] Emit body parts asynchronously so cancellation can interrupt them.
     final headers = Map<String, String>.of(answer.headers);
-    final parts = answer.chunks ??
+    final parts =
+        answer.chunks ??
         <List<int>>[
-          utf8.encode(answer.json != null
-              ? jsonEncode(answer.json)
-              : answer.text ?? ''),
+          utf8.encode(
+            answer.json != null ? jsonEncode(answer.json) : answer.text ?? '',
+          ),
         ];
     if (answer.json != null) {
       headers.putIfAbsent('content-type', () => 'application/json');
@@ -164,11 +171,13 @@ final class FakeEngine {
     controller = StreamController<List<int>>(
       onListen: () {
         if (abortTrigger != null) {
-          unawaited(abortTrigger.then((_) {
-            if (cancelled || controller.isClosed) return;
-            controller.addError(http.RequestAbortedException(request.url));
-            unawaited(controller.close());
-          }));
+          unawaited(
+            abortTrigger.then((_) {
+              if (cancelled || controller.isClosed) return;
+              controller.addError(http.RequestAbortedException(request.url));
+              unawaited(controller.close());
+            }),
+          );
         }
         unawaited(() async {
           for (var index = 0; index < parts.length; index++) {
@@ -176,7 +185,8 @@ final class FakeEngine {
             if (cancelled || controller.isClosed) return;
             if (answer.dropAfter != null && index >= answer.dropAfter!) {
               controller.addError(
-                  http.ClientException('connection dropped', request.url));
+                http.ClientException('connection dropped', request.url),
+              );
               await controller.close();
               return;
             }
@@ -185,7 +195,8 @@ final class FakeEngine {
           if (cancelled || controller.isClosed || answer.hang) return;
           if (answer.dropAfter == parts.length) {
             controller.addError(
-                http.ClientException('connection dropped', request.url));
+              http.ClientException('connection dropped', request.url),
+            );
           }
           await controller.close();
         }());
@@ -197,8 +208,12 @@ final class FakeEngine {
       onPause: () => upstreamPauses++,
       onResume: () => upstreamResumes++,
     );
-    return http.StreamedResponse(controller.stream, answer.status,
-        headers: headers, request: request);
+    return http.StreamedResponse(
+      controller.stream,
+      answer.status,
+      headers: headers,
+      request: request,
+    );
   }
 }
 
@@ -226,57 +241,57 @@ String frame(Object value) =>
     'data: ${value is String ? value : jsonEncode(value)}\n\n';
 
 /// Build one content chunk.
-Map<String, Object?> chunk(String content,
-        {String model = 'gemini-3.8-flash'}) =>
+Map<String, Object?> chunk(
+  String content, {
+  String model = 'gemini-3.8-flash',
+}) => {
+  'id': 'chatcmpl-fake',
+  'object': 'chat.completion.chunk',
+  'created': 0,
+  'model': model,
+  'choices': [
     {
-      'id': 'chatcmpl-fake',
-      'object': 'chat.completion.chunk',
-      'created': 0,
-      'model': model,
-      'choices': [
-        {
-          'index': 0,
-          'delta': {'content': content},
-          'finish_reason': null,
-        },
-      ],
-    };
+      'index': 0,
+      'delta': {'content': content},
+      'finish_reason': null,
+    },
+  ],
+};
 
 /// Build a final usage chunk.
 Map<String, Object?> usageChunk({int prompt = 3, int completion = 2}) => {
-      'id': 'chatcmpl-fake',
-      'object': 'chat.completion.chunk',
-      'created': 0,
-      'model': 'gemini-3.8-flash',
-      'choices': <Object?>[],
-      'usage': {
-        'prompt_tokens': prompt,
-        'completion_tokens': completion,
-        'total_tokens': prompt + completion,
-      },
-    };
+  'id': 'chatcmpl-fake',
+  'object': 'chat.completion.chunk',
+  'created': 0,
+  'model': 'gemini-3.8-flash',
+  'choices': <Object?>[],
+  'usage': {
+    'prompt_tokens': prompt,
+    'completion_tokens': completion,
+    'total_tokens': prompt + completion,
+  },
+};
 
 /// Build a buffered chat completion.
 Map<String, Object?> completion({
   String content = 'hello',
   String model = 'gemini-3.8-flash',
   Map<String, Object?>? usage,
-}) =>
+}) => {
+  'id': 'chatcmpl-fake',
+  'object': 'chat.completion',
+  'created': 0,
+  'model': model,
+  'choices': [
     {
-      'id': 'chatcmpl-fake',
-      'object': 'chat.completion',
-      'created': 0,
-      'model': model,
-      'choices': [
-        {
-          'index': 0,
-          'message': {'role': 'assistant', 'content': content},
-          'finish_reason': 'stop',
-        },
-      ],
-      'usage': usage ??
-          {'prompt_tokens': 3, 'completion_tokens': 1, 'total_tokens': 4},
-    };
+      'index': 0,
+      'message': {'role': 'assistant', 'content': content},
+      'finish_reason': 'stop',
+    },
+  ],
+  'usage':
+      usage ?? {'prompt_tokens': 3, 'completion_tokens': 1, 'total_tokens': 4},
+};
 
 const _statusByCode = <String, int>{
   'invalid_request': 400,

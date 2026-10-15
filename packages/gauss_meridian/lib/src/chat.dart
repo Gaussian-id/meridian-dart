@@ -11,7 +11,7 @@ import 'transport.dart';
 final class ChatApi {
   /// Creates the chat interface for an endpoint.
   const ChatApi(this._transport, {String path = '/v1/chat/completions'})
-      : _path = path;
+    : _path = path;
 
   final Transport _transport;
   final String _path;
@@ -37,12 +37,18 @@ final class ChatApi {
     final reply = await _transport.json(call, abortTrigger: abortTrigger);
     if (reply is Err<JsonReply>) return Err(reply.error);
     final value = (reply as Ok<JsonReply>).data;
-    final completion =
-        ChatCompletion.fromJson(value.value, requestId: value.requestId);
+    final completion = ChatCompletion.fromJson(
+      value.value,
+      requestId: value.requestId,
+    );
     if (completion == null) {
-      return Err(clientError(
-          'network_error', 'The chat response did not have the expected shape.',
-          requestId: value.requestId));
+      return Err(
+        clientError(
+          'network_error',
+          'The chat response did not have the expected shape.',
+          requestId: value.requestId,
+        ),
+      );
     }
     return Ok(completion);
   }
@@ -62,8 +68,11 @@ final class ChatApi {
       body: chatBody(params, stream: true),
       headers: {'idempotency-key': idempotencyKey ?? newIdempotencyKey()},
     );
-    final opened = await _transport.open(call,
-        abortTrigger: abortTrigger, headersOnly: true);
+    final opened = await _transport.open(
+      call,
+      abortTrigger: abortTrigger,
+      headersOnly: true,
+    );
     return switch (opened) {
       Ok<Opened>(:final data) => Ok(ChatStream(data)),
       Err<Opened>(:final error) => Err(error),
@@ -80,15 +89,20 @@ final class ModelsApi {
 
   /// List models available to the project key.
   Future<MeridianResult<ModelList>> list() async {
-    final reply =
-        await _transport.json(const Call(method: 'GET', path: '/v1/models'));
+    final reply = await _transport.json(
+      const Call(method: 'GET', path: '/v1/models'),
+    );
     if (reply is Err<JsonReply>) return Err(reply.error);
     final value = (reply as Ok<JsonReply>).data;
     final models = ModelList.fromJson(value.value);
     if (models == null) {
-      return Err(clientError(
-          'network_error', 'The model list did not have the expected shape.',
-          requestId: value.requestId));
+      return Err(
+        clientError(
+          'network_error',
+          'The model list did not have the expected shape.',
+          requestId: value.requestId,
+        ),
+      );
     }
     return Ok(models);
   }
@@ -112,8 +126,9 @@ String newIdempotencyKey() {
   final bytes = List<int>.generate(16, (_) => random.nextInt(256));
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  final hex =
-      bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+  final hex = bytes
+      .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+      .join();
   return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
       '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
       '${hex.substring(20)}';

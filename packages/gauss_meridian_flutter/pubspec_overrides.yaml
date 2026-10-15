@@ -1,0 +1,5 @@
+# Local development only: resolve the core package from this checkout.
+# Excluded from publishing by .pubignore.
+dependency_overrides:
+  gauss_meridian:
+    path: ../gauss_meridian

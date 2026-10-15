@@ -32,35 +32,37 @@ void main() {
   final endpoint = Uri.parse('http://app.test/api/meridian/chat');
   const validBody = '{"messages":[{"role":"user","content":"hello"}]}';
 
-  Request request(String body,
-          {String method = 'POST',
-          String? contentType = 'application/json',
-          Map<String, String> headers = const {}}) =>
-      Request(method, endpoint,
-          headers: {
-            if (contentType != null) 'content-type': contentType,
-            ...headers,
-          },
-          body: body);
+  Request request(
+    String body, {
+    String method = 'POST',
+    String? contentType = 'application/json',
+    Map<String, String> headers = const {},
+  }) => Request(
+    method,
+    endpoint,
+    headers: {'content-type': ?contentType, ...headers},
+    body: body,
+  );
 
   Handler handler({
     Authorize? authorize,
     ClientFactory? client,
     AllowRule allow = const AllowRule(),
-  }) =>
-      meridianForwardHandler(
-        authorize: authorize ??
-            (incoming) {
-              authorized++;
-              return true;
-            },
-        client: client ??
-            (incoming) {
-              built++;
-              return server;
-            },
-        allow: allow,
-      );
+  }) => meridianForwardHandler(
+    authorize:
+        authorize ??
+        (incoming) {
+          authorized++;
+          return true;
+        },
+    client:
+        client ??
+        (incoming) {
+          built++;
+          return server;
+        },
+    allow: allow,
+  );
 
   Future<(Response, Map<String, dynamic>)> send(
     Handler route,
@@ -69,8 +71,9 @@ void main() {
     String? contentType = 'application/json',
     Map<String, String> headers = const {},
   }) async {
-    final response = await route(request(body,
-        method: method, contentType: contentType, headers: headers));
+    final response = await route(
+      request(body, method: method, contentType: contentType, headers: headers),
+    );
     final decoded =
         jsonDecode(await response.readAsString()) as Map<String, dynamic>;
     return (response, decoded);
@@ -95,8 +98,11 @@ void main() {
     'application/x-www-form-urlencoded',
   ]) {
     test('rejects content type $contentType before authorize', () async {
-      final (response, _) =
-          await send(handler(), validBody, contentType: contentType);
+      final (response, _) = await send(
+        handler(),
+        validBody,
+        contentType: contentType,
+      );
       expect(response.statusCode, 415);
       expect(authorized, 0);
       expect(engine.requests, isEmpty);
@@ -104,8 +110,11 @@ void main() {
   }
 
   test('accepts case-insensitive JSON content type with parameters', () async {
-    final (response, _) = await send(handler(), validBody,
-        contentType: 'Application/JSON; charset=utf-8');
+    final (response, _) = await send(
+      handler(),
+      validBody,
+      contentType: 'Application/JSON; charset=utf-8',
+    );
     expect(response.statusCode, 200);
     expect(engine.requests, hasLength(1));
   });
@@ -120,34 +129,44 @@ void main() {
 
   for (final value in <Object?>[false, null, 1, 'yes']) {
     test('authorize value $value is a refusal', () async {
-      final (response, _) =
-          await send(handler(authorize: (_) => value), validBody);
+      final (response, _) = await send(
+        handler(authorize: (_) => value),
+        validBody,
+      );
       expect(response.statusCode, 403);
       expect(engine.requests, isEmpty);
     });
   }
 
-  test('synchronous and asynchronous authorization throws are refusals',
-      () async {
-    for (final authorize in <Authorize>[
-      (_) => throw StateError('private'),
-      (_) async => throw StateError('private'),
-    ]) {
-      final (response, body) =
-          await send(handler(authorize: authorize), validBody);
-      expect(response.statusCode, 403);
-      expect(jsonEncode(body), isNot(contains('private')));
-    }
-    expect(engine.requests, isEmpty);
-  });
+  test(
+    'synchronous and asynchronous authorization throws are refusals',
+    () async {
+      for (final authorize in <Authorize>[
+        (_) => throw StateError('private'),
+        (_) async => throw StateError('private'),
+      ]) {
+        final (response, body) = await send(
+          handler(authorize: authorize),
+          validBody,
+        );
+        expect(response.statusCode, 403);
+        expect(jsonEncode(body), isNot(contains('private')));
+      }
+      expect(engine.requests, isEmpty);
+    },
+  );
 
   test('async true proceeds and authorize can read the body', () async {
     String? seen;
-    final (response, _) =
-        await send(handler(authorize: (Request incoming) async {
-      seen = await incoming.readAsString();
-      return true;
-    }), validBody);
+    final (response, _) = await send(
+      handler(
+        authorize: (Request incoming) async {
+          seen = await incoming.readAsString();
+          return true;
+        },
+      ),
+      validBody,
+    );
     expect(response.statusCode, 200);
     expect(seen, validBody);
     expect(engine.requests, hasLength(1));
@@ -180,10 +199,10 @@ void main() {
   }
 
   String nested(int depth) => jsonEncode({
-        'messages': [
-          {'role': 'user', 'content': 'hello', 'nested': _nest(depth)}
-        ]
-      });
+    'messages': [
+      {'role': 'user', 'content': 'hello', 'nested': _nest(depth)},
+    ],
+  });
 
   test('100-deep JSON is refused and 60-deep JSON is forwarded', () async {
     final route = handler();
@@ -195,56 +214,63 @@ void main() {
     expect(engine.requests, hasLength(1));
   });
 
-  test('copies only allowed fields and owns model and stream controls',
-      () async {
-    final route = handler(
-        allow: const AllowRule(options: [
-      'max_tokens',
-      'temperature',
-      'constructor',
-      'n',
-      'max_completion_tokens',
-      'stream',
-    ]));
-    final body = jsonEncode({
-      'messages': [ChatMessage.user('hello').toJson()],
-      'max_tokens': 1000000,
-      'temperature': 0.3,
-      'constructor': 1,
-      'model': 'hidden',
-      'tools': [1],
-      'x': true,
-      'n': 3,
-      'max_completion_tokens': 999,
-      'stream': false,
-      'stream_options': {'include_usage': false},
-    });
-    final (response, _) = await send(route, body);
-    expect(response.statusCode, 200);
-    final sent = sentBody();
-    expect(sent['messages'],
-        (jsonDecode(body) as Map<String, dynamic>)['messages']);
-    expect(sent['max_tokens'], 4096);
-    expect(sent['temperature'], 0.3);
-    expect(sent['constructor'], 1);
-    expect(sent['stream'], false);
-    for (final key in [
-      'model',
-      'tools',
-      'x',
-      'n',
-      'max_completion_tokens',
-      'stream_options'
-    ]) {
-      expect(sent, isNot(contains(key)), reason: key);
-    }
-  });
+  test(
+    'copies only allowed fields and owns model and stream controls',
+    () async {
+      final route = handler(
+        allow: const AllowRule(
+          options: [
+            'max_tokens',
+            'temperature',
+            'constructor',
+            'n',
+            'max_completion_tokens',
+            'stream',
+          ],
+        ),
+      );
+      final body = jsonEncode({
+        'messages': [ChatMessage.user('hello').toJson()],
+        'max_tokens': 1000000,
+        'temperature': 0.3,
+        'constructor': 1,
+        'model': 'hidden',
+        'tools': [1],
+        'x': true,
+        'n': 3,
+        'max_completion_tokens': 999,
+        'stream': false,
+        'stream_options': {'include_usage': false},
+      });
+      final (response, _) = await send(route, body);
+      expect(response.statusCode, 200);
+      final sent = sentBody();
+      expect(
+        sent['messages'],
+        (jsonDecode(body) as Map<String, dynamic>)['messages'],
+      );
+      expect(sent['max_tokens'], 4096);
+      expect(sent['temperature'], 0.3);
+      expect(sent['constructor'], 1);
+      expect(sent['stream'], false);
+      for (final key in [
+        'model',
+        'tools',
+        'x',
+        'n',
+        'max_completion_tokens',
+        'stream_options',
+      ]) {
+        expect(sent, isNot(contains(key)), reason: key);
+      }
+    },
+  );
 
   test('messages without content reach the engine unchanged', () async {
     final body = jsonEncode({
       'messages': [
-        {'role': 'user'}
-      ]
+        {'role': 'user'},
+      ],
     });
     final (response, _) = await send(handler(), body);
     final expected = jsonDecode(body) as Map<String, dynamic>;
@@ -260,13 +286,14 @@ void main() {
   ]) {
     test('max_tokens $value clamps to $expected', () async {
       final (response, _) = await send(
-          handler(),
-          jsonEncode({
-            'messages': [
-              {'role': 'user'}
-            ],
-            'max_tokens': value
-          }));
+        handler(),
+        jsonEncode({
+          'messages': [
+            {'role': 'user'},
+          ],
+          'max_tokens': value,
+        }),
+      );
       expect(response.statusCode, 200);
       expect(sentBody()['max_tokens'], expected);
     });
@@ -279,13 +306,14 @@ void main() {
   ]) {
     test('token cap $cap becomes $expected', () async {
       final (response, _) = await send(
-          handler(allow: AllowRule(maxTokensCap: cap)),
-          jsonEncode({
-            'messages': [
-              {'role': 'user'}
-            ],
-            'max_tokens': 1099511627776
-          }));
+        handler(allow: AllowRule(maxTokensCap: cap)),
+        jsonEncode({
+          'messages': [
+            {'role': 'user'},
+          ],
+          'max_tokens': 1099511627776,
+        }),
+      );
       expect(response.statusCode, 200);
       expect(sentBody()['max_tokens'], expected);
     });
@@ -294,13 +322,14 @@ void main() {
   for (final temperature in <Object?>['0.3', null]) {
     test('invalid temperature $temperature is dropped', () async {
       final (response, _) = await send(
-          handler(),
-          jsonEncode({
-            'messages': [
-              {'role': 'user'}
-            ],
-            'temperature': temperature,
-          }));
+        handler(),
+        jsonEncode({
+          'messages': [
+            {'role': 'user'},
+          ],
+          'temperature': temperature,
+        }),
+      );
       expect(response.statusCode, 200);
       expect(sentBody(), isNot(contains('temperature')));
     });
@@ -313,13 +342,14 @@ void main() {
       (const AllowRule(anyModel: true), 'm3', 'm3'),
     ]) {
       final (response, _) = await send(
-          handler(allow: allow),
-          jsonEncode({
-            'messages': [
-              {'role': 'user'}
-            ],
-            'model': model
-          }));
+        handler(allow: allow),
+        jsonEncode({
+          'messages': [
+            {'role': 'user'},
+          ],
+          'model': model,
+        }),
+      );
       expect(response.statusCode, 200);
       final sent = engine.bodies().last as Map<String, dynamic>;
       expect(sent['model'], expected);
@@ -328,8 +358,11 @@ void main() {
 
   for (final key in <String>['k-123', '', 'a b', 'ü']) {
     test('idempotency key $key is safely forwarded or replaced', () async {
-      final (response, _) =
-          await send(handler(), validBody, headers: {'idempotency-key': key});
+      final (response, _) = await send(
+        handler(),
+        validBody,
+        headers: {'idempotency-key': key},
+      );
       expect(response.statusCode, 200);
       final sent = engine.requests.single.headers['idempotency-key'];
       expect(sent, matches(RegExp(r'^[\x21-\x7e]{1,255}$')));
@@ -338,40 +371,57 @@ void main() {
   }
 
   test('300-character browser idempotency key is replaced', () async {
-    final (response, _) = await send(handler(), validBody,
-        headers: {'idempotency-key': 'x' * 300});
+    final (response, _) = await send(
+      handler(),
+      validBody,
+      headers: {'idempotency-key': 'x' * 300},
+    );
     expect(response.statusCode, 200);
     final sent = engine.requests.single.headers['idempotency-key'];
     expect(sent, matches(RegExp(r'^[\x21-\x7e]{1,255}$')));
     expect(sent, isNot('x' * 300));
   });
 
-  test('stream relays engine bytes, SSE headers, request id and usage request',
-      () async {
-    final wire = frame(chunk('hello')) + frame(usageChunk()) + frame('[DONE]');
-    engine.next(Scripted(
-        headers: {'x-request-id': 'req_stream'}, chunks: [utf8.encode(wire)]));
-    final response = await handler()(request(jsonEncode({
-      'messages': [
-        {'role': 'user'}
-      ],
-      'stream': true,
-    })));
-    expect(response.statusCode, 200);
-    expect(
-        response.headers['content-type'], 'text/event-stream; charset=utf-8');
-    expect(response.headers['cache-control'], 'no-cache');
-    expect(response.headers['x-request-id'], 'req_stream');
-    expect(response.context['shelf.io.buffer_output'], false);
-    expect(await response.readAsString(), wire);
-    final sent = sentBody();
-    expect(sent['stream'], true);
-    expect(sent['stream_options'], {'include_usage': true});
-  });
+  test(
+    'stream relays engine bytes, SSE headers, request id and usage request',
+    () async {
+      final wire =
+          frame(chunk('hello')) + frame(usageChunk()) + frame('[DONE]');
+      engine.next(
+        Scripted(
+          headers: {'x-request-id': 'req_stream'},
+          chunks: [utf8.encode(wire)],
+        ),
+      );
+      final response = await handler()(
+        request(
+          jsonEncode({
+            'messages': [
+              {'role': 'user'},
+            ],
+            'stream': true,
+          }),
+        ),
+      );
+      expect(response.statusCode, 200);
+      expect(
+        response.headers['content-type'],
+        'text/event-stream; charset=utf-8',
+      );
+      expect(response.headers['cache-control'], 'no-cache');
+      expect(response.headers['x-request-id'], 'req_stream');
+      expect(response.context['shelf.io.buffer_output'], false);
+      expect(await response.readAsString(), wire);
+      final sent = sentBody();
+      expect(sent['stream'], true);
+      expect(sent['stream_options'], {'include_usage': true});
+    },
+  );
 
   test('buffered response returns completion JSON and request id', () async {
-    engine.next(Scripted(
-        headers: {'x-request-id': 'req_buffered'}, json: completion()));
+    engine.next(
+      Scripted(headers: {'x-request-id': 'req_buffered'}, json: completion()),
+    );
     final (response, body) = await send(handler(), validBody);
     expect(response.statusCode, 200);
     expect(response.headers['content-type'], contains('application/json'));
@@ -438,8 +488,9 @@ void main() {
 
   test('server client still sees real app credential code', () async {
     engine.next(engineError('insufficient_credit'));
-    final reply = await server.chat
-        .create(ChatParams(messages: [ChatMessage.user('hello')]));
+    final reply = await server.chat.create(
+      ChatParams(messages: [ChatMessage.user('hello')]),
+    );
     expect(reply, isA<Err<ChatCompletion>>());
     expect((reply as Err<ChatCompletion>).error.code, 'insufficient_credit');
   });
@@ -455,13 +506,16 @@ void main() {
       expect(response.statusCode, status);
       expect((body['error'] as Map)['code'], code);
       expect(
-          response.headers['retry-after'], code == 'rate_limited' ? '7' : null);
+        response.headers['retry-after'],
+        code == 'rate_limited' ? '7' : null,
+      );
     });
   }
 
   test('other engine Retry-After is not relayed', () async {
     engine.next(
-        engineError('upstream_unavailable', headers: {'retry-after': '5'}));
+      engineError('upstream_unavailable', headers: {'retry-after': '5'}),
+    );
     final (response, body) = await send(handler(), validBody);
     expect(response.statusCode, 502);
     expect((body['error'] as Map)['code'], 'upstream_unavailable');
@@ -470,13 +524,18 @@ void main() {
 
   for (final badCode in <Object?>['future_error', null, '', 3]) {
     test('unknown or malformed engine code $badCode is generic', () async {
-      engine.next(Scripted(status: 500, json: {
-        'error': {
-          'message': 'private details',
-          'type': 'api_error',
-          if (badCode != null) 'code': badCode,
-        }
-      }));
+      engine.next(
+        Scripted(
+          status: 500,
+          json: {
+            'error': {
+              'message': 'private details',
+              'type': 'api_error',
+              'code': ?badCode,
+            },
+          },
+        ),
+      );
       final (response, body) = await send(handler(), validBody);
       expect(response.statusCode, 503);
       expect((body['error'] as Map)['code'], 'service_unavailable');
@@ -493,45 +552,55 @@ void main() {
 
   test('misconfigured client gives generic 503 without key detail', () async {
     final route = handler(
-        client: (_) => Meridian(
-              url: FakeEngine.publicUrl,
-              key: '',
-              httpClient: engine.client,
-            ));
+      client: (_) => Meridian(
+        url: FakeEngine.publicUrl,
+        key: '',
+        httpClient: engine.client,
+      ),
+    );
     final (response, body) = await send(route, validBody);
     expect(response.statusCode, 503);
     expect(jsonEncode(body).toLowerCase(), isNot(contains('key')));
     expect(engine.requests, isEmpty);
   });
 
-  test('throwing factory gives generic 503 and client builds per request',
-      () async {
-    final failing = handler(client: (_) => throw StateError('secret'));
-    final (failure, body) = await send(failing, validBody);
-    expect(failure.statusCode, 503);
-    expect((body['error'] as Map)['code'], 'service_unavailable');
-    expect(engine.requests, isEmpty);
-    final route = handler();
-    await send(route, validBody);
-    await send(route, validBody);
-    expect(built, 2);
-  });
+  test(
+    'throwing factory gives generic 503 and client builds per request',
+    () async {
+      final failing = handler(client: (_) => throw StateError('secret'));
+      final (failure, body) = await send(failing, validBody);
+      expect(failure.statusCode, 503);
+      expect((body['error'] as Map)['code'], 'service_unavailable');
+      expect(engine.requests, isEmpty);
+      final route = handler();
+      await send(route, validBody);
+      await send(route, validBody);
+      expect(built, 2);
+    },
+  );
 
   test('byte-split hidden error after text becomes generic frame', () async {
     final privateFrame = frame(envelope('insufficient_credit'));
     final wire = frame(chunk('hello'));
-    engine.next(Scripted(headers: {
-      'x-request-id': 'req_stream'
-    }, chunks: [
-      utf8.encode(wire),
-      ...utf8.encode(privateFrame).map((byte) => <int>[byte]),
-    ]));
-    final response = await handler()(request(jsonEncode({
-      'messages': [
-        {'role': 'user'}
-      ],
-      'stream': true,
-    })));
+    engine.next(
+      Scripted(
+        headers: {'x-request-id': 'req_stream'},
+        chunks: [
+          utf8.encode(wire),
+          ...utf8.encode(privateFrame).map((byte) => <int>[byte]),
+        ],
+      ),
+    );
+    final response = await handler()(
+      request(
+        jsonEncode({
+          'messages': [
+            {'role': 'user'},
+          ],
+          'stream': true,
+        }),
+      ),
+    );
     final relayed = await response.readAsString();
     expect(response.statusCode, 200);
     expect(relayed, startsWith(wire));
@@ -541,100 +610,125 @@ void main() {
   });
 
   for (final hiddenCode in [true, false]) {
-    test('200 KB ${hiddenCode ? 'hidden' : 'ordinary'} frame is handled',
-        () async {
-      final payload = hiddenCode
-          ? frame({
-              'error': {
-                'message': 'x' * (200 * 1024),
-                'type': 'rate_limit_error',
-                'code': 'insufficient_credit',
-              }
-            })
-          : frame(chunk('x' * (200 * 1024)));
-      final bytes = utf8.encode(payload);
-      final pieces = <List<int>>[
-        for (var offset = 0; offset < bytes.length; offset += 512)
-          bytes.sublist(offset,
-              offset + 512 > bytes.length ? bytes.length : offset + 512),
-      ];
-      if (!hiddenCode) pieces.add(utf8.encode(frame('[DONE]')));
-      engine.next(Scripted(chunks: pieces));
-      final response = await handler()(request(jsonEncode({
-        'messages': [
-          {'role': 'user'}
-        ],
-        'stream': true,
-      })));
-      final relayed = await response.readAsString();
-      if (hiddenCode) {
-        expect(relayed, contains('"code":"service_unavailable"'));
-        expect(relayed, isNot(contains('insufficient_credit')));
-        expect(relayed.length, lessThan(1000));
-      } else {
-        expect(relayed, payload + frame('[DONE]'));
-      }
-    });
+    test(
+      '200 KB ${hiddenCode ? 'hidden' : 'ordinary'} frame is handled',
+      () async {
+        final payload = hiddenCode
+            ? frame({
+                'error': {
+                  'message': 'x' * (200 * 1024),
+                  'type': 'rate_limit_error',
+                  'code': 'insufficient_credit',
+                },
+              })
+            : frame(chunk('x' * (200 * 1024)));
+        final bytes = utf8.encode(payload);
+        final pieces = <List<int>>[
+          for (var offset = 0; offset < bytes.length; offset += 512)
+            bytes.sublist(
+              offset,
+              offset + 512 > bytes.length ? bytes.length : offset + 512,
+            ),
+        ];
+        if (!hiddenCode) pieces.add(utf8.encode(frame('[DONE]')));
+        engine.next(Scripted(chunks: pieces));
+        final response = await handler()(
+          request(
+            jsonEncode({
+              'messages': [
+                {'role': 'user'},
+              ],
+              'stream': true,
+            }),
+          ),
+        );
+        final relayed = await response.readAsString();
+        if (hiddenCode) {
+          expect(relayed, contains('"code":"service_unavailable"'));
+          expect(relayed, isNot(contains('insufficient_credit')));
+          expect(relayed.length, lessThan(1000));
+        } else {
+          expect(relayed, payload + frame('[DONE]'));
+        }
+      },
+    );
   }
 
   test('ordinary mid-stream error passes unchanged', () async {
     final wire = frame(chunk('hello')) + frame(envelope('upstream_error'));
     engine.next(Scripted(chunks: [utf8.encode(wire)]));
-    final response = await handler()(request(jsonEncode({
-      'messages': [
-        {'role': 'user'}
-      ],
-      'stream': true,
-    })));
+    final response = await handler()(
+      request(
+        jsonEncode({
+          'messages': [
+            {'role': 'user'},
+          ],
+          'stream': true,
+        }),
+      ),
+    );
     expect(await response.readAsString(), wire);
   });
 
   test('truncated stream ends in generic frame', () async {
     engine.next(Scripted(chunks: [utf8.encode(frame(chunk('hello')))]));
-    final response = await handler()(request(jsonEncode({
-      'messages': [
-        {'role': 'user'}
-      ],
-      'stream': true,
-    })));
+    final response = await handler()(
+      request(
+        jsonEncode({
+          'messages': [
+            {'role': 'user'},
+          ],
+          'stream': true,
+        }),
+      ),
+    );
     final relayed = await response.readAsString();
     expect(relayed, startsWith(frame(chunk('hello'))));
     expect(relayed, contains('"code":"service_unavailable"'));
   });
 
   test('unsafe request id never reaches a header or body', () async {
-    engine.next(Scripted(
+    engine.next(
+      Scripted(
         status: 401,
         headers: {'x-request-id': 'bad\r\nid'},
-        json: envelope('invalid_api_key', requestId: 'bad\r\nid')));
+        json: envelope('invalid_api_key', requestId: 'bad\r\nid'),
+      ),
+    );
     final (response, body) = await send(handler(), validBody);
     expect(response.statusCode, 503);
     expect(response.headers, isNot(contains('x-request-id')));
     expect((body['error'] as Map), isNot(contains('request_id')));
   });
 
-  test('unsafe request id is removed from an ordinary stream error frame',
-      () async {
-    final unsafe = frame({
-      'error': {
-        'message': 'upstream failed',
-        'type': 'api_error',
-        'code': 'upstream_error',
-        'request_id': 'bad\r\nid',
-      }
-    });
-    engine.next(Scripted(chunks: [utf8.encode(unsafe)]));
-    final response = await handler()(request(jsonEncode({
-      'messages': [
-        {'role': 'user'}
-      ],
-      'stream': true,
-    })));
-    final wire = await response.readAsString();
-    expect(wire, contains('"code":"upstream_error"'));
-    expect(wire, isNot(contains('bad\\r\\nid')));
-    expect(wire, isNot(contains('request_id')));
-  });
+  test(
+    'unsafe request id is removed from an ordinary stream error frame',
+    () async {
+      final unsafe = frame({
+        'error': {
+          'message': 'upstream failed',
+          'type': 'api_error',
+          'code': 'upstream_error',
+          'request_id': 'bad\r\nid',
+        },
+      });
+      engine.next(Scripted(chunks: [utf8.encode(unsafe)]));
+      final response = await handler()(
+        request(
+          jsonEncode({
+            'messages': [
+              {'role': 'user'},
+            ],
+            'stream': true,
+          }),
+        ),
+      );
+      final wire = await response.readAsString();
+      expect(wire, contains('"code":"upstream_error"'));
+      expect(wire, isNot(contains('bad\\r\\nid')));
+      expect(wire, isNot(contains('request_id')));
+    },
+  );
 
   test('unsafe request id in a buffered body is removed', () async {
     final reply = completion()..['request_id'] = 'bad\r\nid';
@@ -646,16 +740,25 @@ void main() {
   });
 
   test('cancelling response body cancels fake upstream', () async {
-    engine.next(Scripted(chunks: [
-      utf8.encode(frame(chunk('first'))),
-      utf8.encode(frame(chunk('second'))),
-    ], hang: true));
-    final response = await handler()(request(jsonEncode({
-      'messages': [
-        {'role': 'user'}
-      ],
-      'stream': true,
-    })));
+    engine.next(
+      Scripted(
+        chunks: [
+          utf8.encode(frame(chunk('first'))),
+          utf8.encode(frame(chunk('second'))),
+        ],
+        hang: true,
+      ),
+    );
+    final response = await handler()(
+      request(
+        jsonEncode({
+          'messages': [
+            {'role': 'user'},
+          ],
+          'stream': true,
+        }),
+      ),
+    );
     final first = Completer<void>();
     late StreamSubscription<List<int>> subscription;
     subscription = response.read().listen((_) {

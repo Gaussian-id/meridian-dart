@@ -1,0 +1,9 @@
+# A .pubignore replaces .gitignore for pub, so repeat every .gitignore entry.
+.dart_tool/
+build/
+.superpowers/
+.omc/
+pubspec.lock
+
+# Local development override of gauss_meridian; never published.
+pubspec_overrides.yaml

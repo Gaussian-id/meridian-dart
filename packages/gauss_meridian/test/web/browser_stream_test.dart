@@ -31,8 +31,10 @@ void main() {
     }
 
     expect(chunks, ['first', 'last']);
-    expect(arrivals.last.difference(arrivals.first).inMilliseconds,
-        greaterThanOrEqualTo(250));
+    expect(
+      arrivals.last.difference(arrivals.first).inMilliseconds,
+      greaterThanOrEqualTo(250),
+    );
     expect(await stream.done, isNull);
   });
 

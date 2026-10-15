@@ -10,8 +10,9 @@ void main() {
   final publicSpec =
       jsonDecode(File('../../spec/meridian-public.json').readAsStringSync())
           as Map<String, dynamic>;
-  final schemas = ((publicSpec['components'] as Map<String, dynamic>)['schemas']
-      as Map<String, dynamic>);
+  final schemas =
+      ((publicSpec['components'] as Map<String, dynamic>)['schemas']
+          as Map<String, dynamic>);
 
   Set<String> properties(String name) =>
       ((schemas[name] as Map<String, dynamic>)['properties']
@@ -31,8 +32,10 @@ void main() {
     final code = fields['code'] as Map<String, dynamic>;
     final type = fields['type'] as Map<String, dynamic>;
     expect(engineErrorCodes, (code['enum'] as List<dynamic>).cast<String>());
-    expect(knownTypes.difference({'client_error'}),
-        (type['enum'] as List<dynamic>).cast<String>().toSet());
+    expect(
+      knownTypes.difference({'client_error'}),
+      (type['enum'] as List<dynamic>).cast<String>().toSet(),
+    );
   });
 
   // [2] Check the hand-written public surface against the pinned wire fields.
@@ -46,8 +49,11 @@ void main() {
     };
     for (final entry in models.entries) {
       expect(entry.value, properties(entry.key), reason: entry.key);
-      expect(entry.value.containsAll(required(entry.key)), true,
-          reason: '${entry.key} required fields');
+      expect(
+        entry.value.containsAll(required(entry.key)),
+        true,
+        reason: '${entry.key} required fields',
+      );
     }
   });
 
@@ -64,18 +70,25 @@ void main() {
       ('ChatMessage', ChatMessage.wireFields),
     ]) {
       final schema = schemas[schemaName] as Map<String, dynamic>;
-      expect(properties(schemaName).containsAll(modelFields), true,
-          reason: schemaName);
-      expect(modelFields.containsAll(required(schemaName)), true,
-          reason: '$schemaName required fields');
+      expect(
+        properties(schemaName).containsAll(modelFields),
+        true,
+        reason: schemaName,
+      );
+      expect(
+        modelFields.containsAll(required(schemaName)),
+        true,
+        reason: '$schemaName required fields',
+      );
       expect(schema['additionalProperties'], true, reason: schemaName);
     }
   });
 
   // [3] Check the generated admin surface and representative validation paths.
   test('the pinned source records the engine revision and API version', () {
-    final source = jsonDecode(File('../../spec/SOURCE.json').readAsStringSync())
-        as Map<String, dynamic>;
+    final source =
+        jsonDecode(File('../../spec/SOURCE.json').readAsStringSync())
+            as Map<String, dynamic>;
     expect(source['engineCommit'], matches(RegExp(r'^[0-9a-f]{12}$')));
     expect(engineSpecCommit, source['engineCommit']);
     expect(engineApiVersion, source['publicVersion']);
@@ -83,13 +96,15 @@ void main() {
 
   test('generated admin models have no price or cost identifiers', () {
     final text = File('lib/src/generated/admin_models.dart').readAsStringSync();
-    final identifiers = RegExp(r'\b[A-Za-z_][A-Za-z_0-9]*\b')
-        .allMatches(text)
-        .map((match) => match.group(0)!);
+    final identifiers = RegExp(
+      r'\b[A-Za-z_][A-Za-z_0-9]*\b',
+    ).allMatches(text).map((match) => match.group(0)!);
     expect(
-        identifiers.where((name) =>
-            RegExp('cost|price', caseSensitive: false).hasMatch(name)),
-        isEmpty);
+      identifiers.where(
+        (name) => RegExp('cost|price', caseSensitive: false).hasMatch(name),
+      ),
+      isEmpty,
+    );
   });
 
   test('generated admin models cover each integrator response shape', () {
@@ -139,17 +154,20 @@ void main() {
       },
       'routing_class': 3,
     };
-    expect(() => SupplierModelResponse.tryParse(sample)?.routingClass,
-        returnsNormally);
+    expect(
+      () => SupplierModelResponse.tryParse(sample)?.routingClass,
+      returnsNormally,
+    );
     expect(SupplierModelResponse.tryParse(sample)?.routingClass, isNull);
   });
 
   test('required nested objects and array elements are validated', () {
     expect(
-        ModelAllowlist.tryParse({
-          'models': ['m1', 3]
-        }),
-        isNull);
+      ModelAllowlist.tryParse({
+        'models': ['m1', 3],
+      }),
+      isNull,
+    );
     expect(
       CatalogueModelBody.tryParse({
         'id': 'm',

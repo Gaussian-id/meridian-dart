@@ -1,8 +1,14 @@
 name: gauss_meridian
+description: >-
+  The official Dart SDK for Gauss Meridian: one API for many AI models, with
+  streaming chat, admin provisioning and a Shelf forwarding route.
 version: 0.1.0
-publish_to: none
+homepage: https://github.com/Gaussian-id/meridian-dart
+repository: https://github.com/Gaussian-id/meridian-dart/tree/main/packages/gauss_meridian
+issue_tracker: https://github.com/Gaussian-id/meridian-dart/issues
+topics: [ai, llm, sdk, chat, streaming]
 environment:
-  sdk: ^3.5.0
+  sdk: ">=3.11.0 <4.0.0"
 dependencies:
   http: ^1.6.0
   shelf: ^1.4.2

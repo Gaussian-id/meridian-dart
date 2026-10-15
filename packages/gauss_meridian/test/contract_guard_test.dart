@@ -10,7 +10,7 @@ void main() {
       ('GAUSSMERIDIAN_GEMINI_API_KEY=abc', ['GAUSSMERIDIAN_GEMINI_API_KEY']),
       (
         'export GAUSSMERIDIAN_OPENROUTER_API_KEY="x"\r\n',
-        ['GAUSSMERIDIAN_OPENROUTER_API_KEY']
+        ['GAUSSMERIDIAN_OPENROUTER_API_KEY'],
       ),
       ('gaussmeridian_gemini_api_key = y', ['GAUSSMERIDIAN_GEMINI_API_KEY']),
       ('# GAUSSMERIDIAN_GEMINI_API_KEY=abc', []),
@@ -63,13 +63,16 @@ void main() {
   test('containment resolves paths and excludes the parent itself', () {
     final root = Directory.systemTemp.createTempSync('meridian-contract-');
     addTearDown(() => root.deleteSync(recursive: true));
-    final runtime =
-        Directory('${root.path}${Platform.pathSeparator}MeridianEngine')
-          ..createSync();
-    final inside =
-        File('${runtime.path}${Platform.pathSeparator}meridian-engine.env');
-    final outside = File('${runtime.path}${Platform.pathSeparator}..'
-        '${Platform.pathSeparator}elsewhere.env');
+    final runtime = Directory(
+      '${root.path}${Platform.pathSeparator}MeridianEngine',
+    )..createSync();
+    final inside = File(
+      '${runtime.path}${Platform.pathSeparator}meridian-engine.env',
+    );
+    final outside = File(
+      '${runtime.path}${Platform.pathSeparator}..'
+      '${Platform.pathSeparator}elsewhere.env',
+    );
     expect(guard.isInside(runtime.path, inside.path), isTrue);
     expect(guard.isInside(runtime.path, outside.path), isFalse);
     expect(guard.isInside(runtime.path, runtime.path), isFalse);

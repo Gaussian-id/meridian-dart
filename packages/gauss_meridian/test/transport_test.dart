@@ -32,9 +32,10 @@ void main() {
 
   test('two retries return the last upstream error', () async {
     engine.next(
-        engineError('upstream_unavailable'),
-        engineError('upstream_unavailable'),
-        engineError('upstream_unavailable'));
+      engineError('upstream_unavailable'),
+      engineError('upstream_unavailable'),
+      engineError('upstream_unavailable'),
+    );
 
     final result = await client().chat.create(prompt());
 
@@ -47,9 +48,10 @@ void main() {
   for (final (retries, expected) in [(0, 1), (-1, 3), (99, 3)]) {
     test('maxRetries $retries sends $expected request(s)', () async {
       engine.next(
-          engineError('upstream_unavailable'),
-          engineError('upstream_unavailable'),
-          engineError('upstream_unavailable'));
+        engineError('upstream_unavailable'),
+        engineError('upstream_unavailable'),
+        engineError('upstream_unavailable'),
+      );
 
       final result = await client(maxRetries: retries).chat.create(prompt());
 
@@ -71,7 +73,9 @@ void main() {
 
   test('a retry reuses the same generated idempotency key', () async {
     engine.next(
-        engineError('service_unavailable'), Scripted(json: completion()));
+      engineError('service_unavailable'),
+      Scripted(json: completion()),
+    );
 
     final result = await client().chat.create(prompt());
 
@@ -87,18 +91,24 @@ void main() {
   test('a caller idempotency key is sent on every attempt', () async {
     engine.next(engineError('rate_limited'), Scripted(json: completion()));
 
-    final result =
-        await client().chat.create(prompt(), idempotencyKey: 'caller-key-1');
+    final result = await client().chat.create(
+      prompt(),
+      idempotencyKey: 'caller-key-1',
+    );
 
     expect(result, isA<Ok<ChatCompletion>>());
-    expect(engine.requests.map((request) => request.headers['idempotency-key']),
-        ['caller-key-1', 'caller-key-1']);
+    expect(
+      engine.requests.map((request) => request.headers['idempotency-key']),
+      ['caller-key-1', 'caller-key-1'],
+    );
   });
 
   for (final (value, seconds) in [('2', 2), ('30', 30)]) {
     test('Retry-After $value waits exactly $seconds seconds', () async {
-      engine.next(engineError('rate_limited', headers: {'retry-after': value}),
-          Scripted(json: completion()));
+      engine.next(
+        engineError('rate_limited', headers: {'retry-after': value}),
+        Scripted(json: completion()),
+      );
 
       final result = await client().chat.create(prompt());
 
@@ -109,19 +119,23 @@ void main() {
   }
 
   for (final value in ['31', '3600']) {
-    test('Retry-After $value returns immediately with the request id',
-        () async {
-      engine.next(engineError('rate_limited', headers: {'retry-after': value}));
+    test(
+      'Retry-After $value returns immediately with the request id',
+      () async {
+        engine.next(
+          engineError('rate_limited', headers: {'retry-after': value}),
+        );
 
-      final result = await client().chat.create(prompt());
+        final result = await client().chat.create(prompt());
 
-      expect(result, isA<Err<ChatCompletion>>());
-      final error = (result as Err<ChatCompletion>).error;
-      expect(error.code, 'rate_limited');
-      expect(error.requestId, 'req_fake_1');
-      expect(engine.requests, hasLength(1));
-      expect(sleeps, isEmpty);
-    });
+        expect(result, isA<Err<ChatCompletion>>());
+        final error = (result as Err<ChatCompletion>).error;
+        expect(error.code, 'rate_limited');
+        expect(error.requestId, 'req_fake_1');
+        expect(engine.requests, hasLength(1));
+        expect(sleeps, isEmpty);
+      },
+    );
   }
 
   for (final value in [
@@ -134,29 +148,37 @@ void main() {
     '9' * 400,
   ]) {
     test(
-        'odd Retry-After ${value.length > 40 ? '400 digits' : value} backs off',
-        () async {
-      engine.next(engineError('rate_limited', headers: {'retry-after': value}),
-          Scripted(json: completion()));
+      'odd Retry-After ${value.length > 40 ? '400 digits' : value} backs off',
+      () async {
+        engine.next(
+          engineError('rate_limited', headers: {'retry-after': value}),
+          Scripted(json: completion()),
+        );
 
-      final result = await client().chat.create(prompt());
+        final result = await client().chat.create(prompt());
 
-      expect(result, isA<Ok<ChatCompletion>>());
-      expect(sleeps, hasLength(1));
-      expect(sleeps.single,
-          greaterThanOrEqualTo(const Duration(milliseconds: 500)));
-      expect(sleeps.single, lessThan(const Duration(milliseconds: 750)));
-      expect(engine.requests, hasLength(2));
-    });
+        expect(result, isA<Ok<ChatCompletion>>());
+        expect(sleeps, hasLength(1));
+        expect(
+          sleeps.single,
+          greaterThanOrEqualTo(const Duration(milliseconds: 500)),
+        );
+        expect(sleeps.single, lessThan(const Duration(milliseconds: 750)));
+        expect(engine.requests, hasLength(2));
+      },
+    );
   }
 
   test('a header timeout retries and returns a typed network error', () async {
-    engine.next(const Scripted(headersNever: true),
-        const Scripted(headersNever: true), const Scripted(headersNever: true));
+    engine.next(
+      const Scripted(headersNever: true),
+      const Scripted(headersNever: true),
+      const Scripted(headersNever: true),
+    );
 
-    final result = await client(timeout: const Duration(milliseconds: 50))
-        .chat
-        .create(prompt());
+    final result = await client(
+      timeout: const Duration(milliseconds: 50),
+    ).chat.create(prompt());
 
     expect(result, isA<Err<ChatCompletion>>());
     final error = (result as Err<ChatCompletion>).error;
@@ -168,11 +190,12 @@ void main() {
   });
 
   test('a successful stream outlives its header timeout', () async {
-    engine.next(Scripted(
-        chunks: [frame(chunk('still working')).codeUnits], hang: true));
-    final result = await client(timeout: const Duration(milliseconds: 40))
-        .chat
-        .stream(prompt());
+    engine.next(
+      Scripted(chunks: [frame(chunk('still working')).codeUnits], hang: true),
+    );
+    final result = await client(
+      timeout: const Duration(milliseconds: 40),
+    ).chat.stream(prompt());
     expect(result, isA<Ok<ChatStream>>());
     final stream = (result as Ok<ChatStream>).data;
     final first = Completer<void>();
@@ -200,30 +223,38 @@ void main() {
     expect((result as Err<ChatCompletion>).error.code, 'network_error');
   });
 
-  test('a network failure followed by success returns the completion',
-      () async {
-    engine.next(const Scripted(networkError: true),
-        Scripted(json: completion(content: 'ok')));
-
-    final result = await client().chat.create(prompt());
-
-    expect(result, isA<Ok<ChatCompletion>>());
-    expect((result as Ok<ChatCompletion>).data.text, 'ok');
-    expect(engine.requests, hasLength(2));
-  });
-
-  for (final previous in ['upstream_unavailable', 'rate_limited']) {
-    test('$previous followed by idempotency conflict keeps the right error',
-        () async {
-      engine.next(engineError(previous), engineError('idempotency_conflict'));
+  test(
+    'a network failure followed by success returns the completion',
+    () async {
+      engine.next(
+        const Scripted(networkError: true),
+        Scripted(json: completion(content: 'ok')),
+      );
 
       final result = await client().chat.create(prompt());
 
-      expect(result, isA<Err<ChatCompletion>>());
-      expect((result as Err<ChatCompletion>).error.code,
-          previous == 'rate_limited' ? 'idempotency_conflict' : previous);
+      expect(result, isA<Ok<ChatCompletion>>());
+      expect((result as Ok<ChatCompletion>).data.text, 'ok');
       expect(engine.requests, hasLength(2));
-    });
+    },
+  );
+
+  for (final previous in ['upstream_unavailable', 'rate_limited']) {
+    test(
+      '$previous followed by idempotency conflict keeps the right error',
+      () async {
+        engine.next(engineError(previous), engineError('idempotency_conflict'));
+
+        final result = await client().chat.create(prompt());
+
+        expect(result, isA<Err<ChatCompletion>>());
+        expect(
+          (result as Err<ChatCompletion>).error.code,
+          previous == 'rate_limited' ? 'idempotency_conflict' : previous,
+        );
+        expect(engine.requests, hasLength(2));
+      },
+    );
   }
 
   test('a conflict on the first attempt is returned as is', () async {

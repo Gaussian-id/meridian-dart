@@ -9,9 +9,9 @@ void main() {
   });
 
   test('meridianVersion matches the pubspec version', () {
-    final line = File('pubspec.yaml')
-        .readAsLinesSync()
-        .singleWhere((line) => line.startsWith('version:'));
+    final line = File(
+      'pubspec.yaml',
+    ).readAsLinesSync().singleWhere((line) => line.startsWith('version:'));
     expect(meridianVersion, line.substring('version:'.length).trim());
   });
 

@@ -6,8 +6,10 @@ Set<String> reachableLibraries(String entryFile) {
   final root = Directory.current.absolute;
   final pending = <File>[File(entryFile).absolute];
   final reachable = <String>{};
-  final directive =
-      RegExp(r'''\b(?:import|export)\s+['"][^'"]+['"][^;]*;''', dotAll: true);
+  final directive = RegExp(
+    r'''\b(?:import|export)\s+['"][^'"]+['"][^;]*;''',
+    dotAll: true,
+  );
   final quoted = RegExp(r'''['"]([^'"]+)['"]''');
 
   // [2] Walk imports and exports, including every conditional URI branch.
@@ -29,8 +31,9 @@ Set<String> reachableLibraries(String entryFile) {
           final packageUri = Uri.parse(uri);
           final parts = packageUri.pathSegments;
           if (parts.first == 'gauss_meridian') {
-            pending.add(File.fromUri(
-                root.uri.resolve('lib/${parts.skip(1).join('/')}')));
+            pending.add(
+              File.fromUri(root.uri.resolve('lib/${parts.skip(1).join('/')}')),
+            );
           } else {
             reachable.add('package:${parts.first}');
           }

@@ -179,7 +179,10 @@ String _type(Map<String, Object?> schema, Map<String, Object?> schemas) {
 }
 
 String _validExpression(
-    String value, Map<String, Object?> schema, Map<String, Object?> schemas) {
+  String value,
+  Map<String, Object?> schema,
+  Map<String, Object?> schemas,
+) {
   // [1] Validate referenced objects recursively.
   final shape = _nonNull(schema);
   final ref = _refName(shape);
@@ -211,8 +214,11 @@ String _validExpression(
 }
 
 String _getterExpression(
-    String value, Map<String, Object?> schema, Map<String, Object?> schemas,
-    {bool promoted = false}) {
+  String value,
+  Map<String, Object?> schema,
+  Map<String, Object?> schemas, {
+  bool promoted = false,
+}) {
   // [1] Wrap referenced objects in their generated extension types.
   final shape = _nonNull(schema);
   final ref = _refName(shape);
@@ -237,22 +243,29 @@ String _getterExpression(
 
 String _lowerCamel(String name) {
   final parts = name.split('_');
-  final value = parts.first +
+  final value =
+      parts.first +
       parts
           .skip(1)
-          .map((part) =>
-              part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1))
+          .map(
+            (part) =>
+                part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1),
+          )
           .join();
   return _reserved.contains(value) ? '${value}Value' : value;
 }
 
 String _model(
-    String name, Map<String, Object?> schema, Map<String, Object?> schemas) {
+  String name,
+  Map<String, Object?> schema,
+  Map<String, Object?> schemas,
+) {
   // [1] Start one documented extension type for a reachable object schema.
   final out = StringBuffer();
   final description = (schema['description'] as String?)?.split('\n').first;
   out.writeln(
-      '/// ${description?.isNotEmpty == true ? description : 'A $name response.'}');
+    '/// ${description?.isNotEmpty == true ? description : 'A $name response.'}',
+  );
   out.writeln('extension type $name._(Map<String, Object?> json) {');
   final properties = _map(schema['properties']);
   final required = _list(schema['required']).whereType<String>().toSet();
@@ -265,37 +278,51 @@ String _model(
     final value = "json['${entry.key}']";
     out.writeln('  /// The `${entry.key}` field.');
     if (isNullable) {
-      final convert =
-          _getterExpression('value', property, schemas, promoted: true);
+      final convert = _getterExpression(
+        'value',
+        property,
+        schemas,
+        promoted: true,
+      );
       final shape = _nonNull(property);
       final ref = _refName(shape);
-      final patternType = ref != null &&
+      final patternType =
+          ref != null &&
               (_map(schemas[ref])['type'] == 'object' ||
                   _map(schemas[ref]).containsKey('properties'))
           ? 'Map<String, Object?>'
           : shape['type'] == 'array'
-              ? 'List<Object?>'
-              : type;
-      final pattern =
-          type == 'Object?' ? 'final value' : 'final $patternType value';
+          ? 'List<Object?>'
+          : type;
+      final pattern = type == 'Object?'
+          ? 'final value'
+          : 'final $patternType value';
       String guard = '';
       if (ref != null && patternType == 'Map<String, Object?>') {
         guard = ' when $ref.isValid(value)';
       } else if (shape['type'] == 'array') {
-        final itemValid =
-            _validExpression('item', _map(shape['items']), schemas);
+        final itemValid = _validExpression(
+          'item',
+          _map(shape['items']),
+          schemas,
+        );
         guard = ' when value.every((Object? item) => $itemValid)';
       }
-      out.writeln('  ${type == 'Object?' ? type : '$type?'} get $getterName => '
-          'switch ($value) { $pattern$guard => $convert, _ => null };');
+      out.writeln(
+        '  ${type == 'Object?' ? type : '$type?'} get $getterName => '
+        'switch ($value) { $pattern$guard => $convert, _ => null };',
+      );
     } else {
-      out.writeln('  $type get $getterName => '
-          '${_getterExpression(value, property, schemas)};');
+      out.writeln(
+        '  $type get $getterName => '
+        '${_getterExpression(value, property, schemas)};',
+      );
     }
   }
   // [3] Validate every required field, including nested objects and arrays.
   out.writeln(
-      '  /// Whether the required wire fields have their expected shapes.');
+    '  /// Whether the required wire fields have their expected shapes.',
+  );
   out.writeln('  static bool isValid(Object? value) {');
   out.writeln('    if (value is! Map<String, Object?>) return false;');
   for (final field in required) {
@@ -307,18 +334,24 @@ String _model(
       out.writeln('    { final fieldValue = $value;');
       final shape = _nonNull(property);
       if (shape['type'] == 'array') {
-        final itemValid =
-            _validExpression('item', _map(shape['items']), schemas);
+        final itemValid = _validExpression(
+          'item',
+          _map(shape['items']),
+          schemas,
+        );
         out.writeln('    if (fieldValue is! List<Object?>) { return false; }');
-        out.writeln('    if (!fieldValue.every((Object? item) => $itemValid)) '
-            '{ return false; }');
+        out.writeln(
+          '    if (!fieldValue.every((Object? item) => $itemValid)) '
+          '{ return false; }',
+        );
       } else {
         final invalid = valid.startsWith('fieldValue is ')
             ? valid.replaceFirst('fieldValue is ', 'fieldValue is! ')
             : '!($valid)';
         out.writeln(
-            '    if (${_nullable(property) ? 'fieldValue != null && ' : ''}'
-            '$invalid) { return false; }');
+          '    if (${_nullable(property) ? 'fieldValue != null && ' : ''}'
+          '$invalid) { return false; }',
+        );
       }
       out.writeln('    }');
     }
@@ -327,8 +360,10 @@ String _model(
   out.writeln('    return true;');
   out.writeln('  }');
   out.writeln('  /// Parse a valid wire object, or return null.');
-  out.writeln('  static $name? tryParse(Object? value) => '
-      'isValid(value) ? $name._(value as Map<String, Object?>) : null;');
+  out.writeln(
+    '  static $name? tryParse(Object? value) => '
+    'isValid(value) ? $name._(value as Map<String, Object?>) : null;',
+  );
   out.writeln('}');
   return out.toString();
 }
@@ -336,10 +371,14 @@ String _model(
 Future<void> main(List<String> args) async {
   // [1] Filter price and cost properties before discovering response models.
   final root = Directory('../../spec');
-  final admin = _map(_withoutPrices(
-      jsonDecode(File('${root.path}/meridian-admin.json').readAsStringSync())));
-  final source =
-      _map(jsonDecode(File('${root.path}/SOURCE.json').readAsStringSync()));
+  final admin = _map(
+    _withoutPrices(
+      jsonDecode(File('${root.path}/meridian-admin.json').readAsStringSync()),
+    ),
+  );
+  final source = _map(
+    jsonDecode(File('${root.path}/SOURCE.json').readAsStringSync()),
+  );
   final packageVersion = File('pubspec.yaml')
       .readAsLinesSync()
       .singleWhere((line) => line.startsWith('version:'))
@@ -379,7 +418,8 @@ Future<void> main(List<String> args) async {
       modelText.writeln(_model(name, schema, schemas));
     }
   }
-  final versionText = '$_header/// The current Meridian package version.\n'
+  final versionText =
+      '$_header/// The current Meridian package version.\n'
       "const meridianVersion = '$packageVersion';\n"
       '/// The pinned engine specification revision.\n'
       "const engineSpecCommit = '${source['engineCommit']}';\n"

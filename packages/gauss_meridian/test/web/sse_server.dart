@@ -52,9 +52,9 @@ Stream<List<int>> _frames() async* {
 }
 
 Map<String, Object?> _chunk(String text) => {
-      'choices': [
-        {
-          'delta': {'content': text},
-        },
-      ],
-    };
+  'choices': [
+    {
+      'delta': {'content': text},
+    },
+  ],
+};

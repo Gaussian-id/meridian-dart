@@ -4,14 +4,11 @@ import 'dart:convert';
 import 'dart:io';
 
 Future<List<int>> _git(Directory engine, List<String> arguments) async {
-  final result = await Process.run(
-      'git',
-      [
-        '-C',
-        engine.path,
-        ...arguments,
-      ],
-      stdoutEncoding: null);
+  final result = await Process.run('git', [
+    '-C',
+    engine.path,
+    ...arguments,
+  ], stdoutEncoding: null);
   if (result.exitCode != 0) {
     throw StateError('git ${arguments.first} failed: ${result.stderr}');
   }
@@ -34,7 +31,8 @@ Future<void> main(List<String> args) async {
   // [2] Record the exact source revision and both document versions.
   final revision = utf8.decode(await _git(engine, ['rev-parse', ref])).trim();
   final now = DateTime.now();
-  final date = '${now.year.toString().padLeft(4, '0')}-'
+  final date =
+      '${now.year.toString().padLeft(4, '0')}-'
       '${now.month.toString().padLeft(2, '0')}-'
       '${now.day.toString().padLeft(2, '0')}';
   String version(String name) =>
@@ -47,7 +45,10 @@ Future<void> main(List<String> args) async {
     'adminVersion': version('meridian-admin.json'),
   };
   File('${spec.path}/SOURCE.json').writeAsStringSync(
-      '${const JsonEncoder.withIndent('  ').convert(source)}\n');
-  print('Pinned engine spec at ${source['engineCommit']} '
-      '(${source['publicVersion']}).');
+    '${const JsonEncoder.withIndent('  ').convert(source)}\n',
+  );
+  print(
+    'Pinned engine spec at ${source['engineCommit']} '
+    '(${source['publicVersion']}).',
+  );
 }

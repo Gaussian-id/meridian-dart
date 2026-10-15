@@ -1,0 +1,9 @@
+# A .pubignore replaces .gitignore for pub, so repeat every .gitignore entry.
+.dart_tool/
+build/
+.superpowers/
+.omc/
+pubspec.lock
+
+# Monorepo tooling: these scripts read ../../spec and do not work outside the repository.
+tool/

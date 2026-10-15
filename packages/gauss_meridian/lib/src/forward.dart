@@ -75,13 +75,13 @@ MeridianError browserError(MeridianError error) {
 }
 
 MeridianError _unavailable([String? requestId]) => MeridianError(
-      code: 'service_unavailable',
-      type: 'api_error',
-      status: 503,
-      message: 'The service is temporarily unavailable.',
-      retryable: false,
-      requestId: cleanRequestId(requestId),
-    );
+  code: 'service_unavailable',
+  type: 'api_error',
+  status: 503,
+  message: 'The service is temporarily unavailable.',
+  retryable: false,
+  requestId: cleanRequestId(requestId),
+);
 
 /// Build a Shelf route that checks authorization before spending credit.
 Handler meridianForwardHandler({
@@ -93,19 +93,14 @@ Handler meridianForwardHandler({
     // [1] Reject unsafe methods and content types before reading credentials.
     if (request.method != 'POST') {
       return _errorResponse(
-          _forwardError(
-            'method_not_allowed',
-            405,
-            'Use POST.',
-          ),
-          extraHeaders: const {'allow': 'POST'});
+        _forwardError('method_not_allowed', 405, 'Use POST.'),
+        extraHeaders: const {'allow': 'POST'},
+      );
     }
     if (!_isJson(request.headers['content-type'])) {
-      return _errorResponse(_forwardError(
-        'invalid_request',
-        415,
-        'The request must be JSON.',
-      ));
+      return _errorResponse(
+        _forwardError('invalid_request', 415, 'The request must be JSON.'),
+      );
     }
 
     // [2] Bound and replay the body for authorization and validation.
@@ -117,19 +112,23 @@ Handler meridianForwardHandler({
     try {
       decision = await authorize(replay);
     } on Object {
-      return _errorResponse(_forwardError(
-        'permission_denied',
-        403,
-        'Not allowed to use this route.',
-      ));
+      return _errorResponse(
+        _forwardError(
+          'permission_denied',
+          403,
+          'Not allowed to use this route.',
+        ),
+      );
     }
     if (decision is Response) return decision;
     if (decision != true) {
-      return _errorResponse(_forwardError(
-        'permission_denied',
-        403,
-        'Not allowed to use this route.',
-      ));
+      return _errorResponse(
+        _forwardError(
+          'permission_denied',
+          403,
+          'Not allowed to use this route.',
+        ),
+      );
     }
 
     // [3] Validate the JSON shape before constructing a per-request client.
@@ -140,11 +139,13 @@ Handler meridianForwardHandler({
     final value = (decoded as Ok<Map<String, dynamic>>).data;
     final params = _allowed(value, allow);
     if (params == null) {
-      return _errorResponse(_forwardError(
-        'invalid_request',
-        400,
-        'messages must be a non-empty array of message objects.',
-      ));
+      return _errorResponse(
+        _forwardError(
+          'invalid_request',
+          400,
+          'messages must be a non-empty array of message objects.',
+        ),
+      );
     }
     Meridian server;
     try {
@@ -153,8 +154,9 @@ Handler meridianForwardHandler({
       return _errorResponse(_unavailable());
     }
     final callerKey = request.headers['idempotency-key'];
-    final key =
-        callerKey != null && validIdempotencyKey(callerKey) ? callerKey : null;
+    final key = callerKey != null && validIdempotencyKey(callerKey)
+        ? callerKey
+        : null;
 
     // [4] Stream by relay, or answer one buffered completion as JSON.
     if (value['stream'] == true) {
@@ -193,8 +195,10 @@ Handler meridianForwardHandler({
 
 bool _isJson(String? value) =>
     value != null &&
-    RegExp(r'^\s*application/json\s*(;.*)?$', caseSensitive: false)
-        .hasMatch(value);
+    RegExp(
+      r'^\s*application/json\s*(;.*)?$',
+      caseSensitive: false,
+    ).hasMatch(value);
 
 MeridianError _forwardError(String code, int status, String message) =>
     MeridianError(
@@ -213,17 +217,20 @@ Future<MeridianResult<Uint8List>> _readBody(Request request) async {
   try {
     await for (final part in request.read()) {
       if (builder.length + part.length > maxForwardBodyBytes) {
-        return Err(_forwardError(
-          'body_too_large',
-          413,
-          'The request body is too large.',
-        ));
+        return Err(
+          _forwardError(
+            'body_too_large',
+            413,
+            'The request body is too large.',
+          ),
+        );
       }
       builder.add(part);
     }
   } on Object {
     return Err(
-        _forwardError('invalid_request', 400, 'The body is unreadable.'));
+      _forwardError('invalid_request', 400, 'The body is unreadable.'),
+    );
   }
   return Ok(builder.takeBytes());
 }
@@ -234,12 +241,14 @@ MeridianResult<Map<String, dynamic>> _decodeBody(Uint8List bytes) {
   try {
     decoded = jsonDecode(utf8.decode(bytes));
   } on FormatException {
-    return Err(_forwardError(
-        'invalid_request', 400, 'The body must be a JSON object.'));
+    return Err(
+      _forwardError('invalid_request', 400, 'The body must be a JSON object.'),
+    );
   }
   if (decoded is! Map<String, dynamic> || !_withinDepth(decoded)) {
-    return Err(_forwardError(
-        'invalid_request', 400, 'The body must be a JSON object.'));
+    return Err(
+      _forwardError('invalid_request', 400, 'The body must be a JSON object.'),
+    );
   }
   return Ok(decoded);
 }
@@ -290,15 +299,17 @@ ChatParams? _allowed(Map<String, dynamic> body, AllowRule rule) {
       ? defaultMaxTokensCap
       : min(rule.maxTokensCap, 2147483647);
   final asked = body['max_tokens'];
-  final maxTokens =
-      asked is num && asked.isFinite ? min(cap, max(1, asked.toInt())) : cap;
+  final maxTokens = asked is num && asked.isFinite
+      ? min(cap, max(1, asked.toInt()))
+      : cap;
   final requestedTemperature = body['temperature'];
   final temperature =
       requestedTemperature is num && requestedTemperature.isFinite
-          ? requestedTemperature
-          : null;
+      ? requestedTemperature
+      : null;
   final requestedModel = body['model'];
-  final model = requestedModel is String &&
+  final model =
+      requestedModel is String &&
           (rule.anyModel || rule.models.contains(requestedModel))
       ? requestedModel
       : null;
@@ -319,8 +330,10 @@ ChatParams? _allowed(Map<String, dynamic> body, AllowRule rule) {
   );
 }
 
-Response _errorResponse(MeridianError error,
-    {Map<String, String> extraHeaders = const {}}) {
+Response _errorResponse(
+  MeridianError error, {
+  Map<String, String> extraHeaders = const {},
+}) {
   final headers = <String, String>{
     'content-type': 'application/json; charset=utf-8',
     ...extraHeaders,
@@ -333,6 +346,9 @@ Response _errorResponse(MeridianError error,
       headers['retry-after'] = ((milliseconds + 999) ~/ 1000).toString();
     }
   }
-  return Response(error.status,
-      headers: headers, body: jsonEncode({'error': wireError(error)}));
+  return Response(
+    error.status,
+    headers: headers,
+    body: jsonEncode({'error': wireError(error)}),
+  );
 }

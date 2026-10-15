@@ -11,8 +11,8 @@ import 'version.dart';
 /// Server-side Meridian client authenticated with a project key.
 final class Meridian {
   Meridian._(this._transport)
-      : chat = ChatApi(_transport),
-        models = ModelsApi(_transport);
+    : chat = ChatApi(_transport),
+      models = ModelsApi(_transport);
 
   /// Construct a server client from explicit options or environment values.
   factory Meridian({
@@ -38,14 +38,16 @@ final class Meridian {
       return Meridian._(Transport.refused(configError(keyError)));
     }
     // [3] Share one transport across public operation groups.
-    return Meridian._(Transport(
-      baseUrl: endpoint!,
-      key: credential,
-      timeout: timeout,
-      maxRetries: maxRetries,
-      httpClient: httpClient,
-      userAgent: 'meridian-dart/$meridianVersion',
-    ));
+    return Meridian._(
+      Transport(
+        baseUrl: endpoint!,
+        key: credential,
+        timeout: timeout,
+        maxRetries: maxRetries,
+        httpClient: httpClient,
+        userAgent: 'meridian-dart/$meridianVersion',
+      ),
+    );
   }
 
   final Transport _transport;

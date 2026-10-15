@@ -73,8 +73,10 @@ extension type CredentialMetadata._(Map<String, Object?> json) {
   String get hint => json['hint'] as String;
 
   /// The `last_used_at` field.
-  String? get lastUsedAt =>
-      switch (json['last_used_at']) { final String value => value, _ => null };
+  String? get lastUsedAt => switch (json['last_used_at']) {
+    final String value => value,
+    _ => null,
+  };
 
   /// The `policy` field.
   String get policy => json['policy'] as String;
@@ -191,8 +193,10 @@ extension type KeyBody._(Map<String, Object?> json) {
   String get createdAt => json['created_at'] as String;
 
   /// The `expires_at` field.
-  String? get expiresAt =>
-      switch (json['expires_at']) { final String value => value, _ => null };
+  String? get expiresAt => switch (json['expires_at']) {
+    final String value => value,
+    _ => null,
+  };
 
   /// The `id` field.
   String get id => json['id'] as String;
@@ -201,27 +205,31 @@ extension type KeyBody._(Map<String, Object?> json) {
   String get keyPrefix => json['key_prefix'] as String;
 
   /// The `last_used_at` field.
-  String? get lastUsedAt =>
-      switch (json['last_used_at']) { final String value => value, _ => null };
+  String? get lastUsedAt => switch (json['last_used_at']) {
+    final String value => value,
+    _ => null,
+  };
 
   /// The `name` field.
-  String? get name =>
-      switch (json['name']) { final String value => value, _ => null };
+  String? get name => switch (json['name']) {
+    final String value => value,
+    _ => null,
+  };
 
   /// The `project_id` field.
   String get projectId => json['project_id'] as String;
 
   /// The `rate_limit_per_day` field.
   int? get rateLimitPerDay => switch (json['rate_limit_per_day']) {
-        final int value => value,
-        _ => null
-      };
+    final int value => value,
+    _ => null,
+  };
 
   /// The `rate_limit_per_minute` field.
   int? get rateLimitPerMinute => switch (json['rate_limit_per_minute']) {
-        final int value => value,
-        _ => null
-      };
+    final int value => value,
+    _ => null,
+  };
 
   /// Whether the required wire fields have their expected shapes.
   static bool isValid(Object? value) {
@@ -315,8 +323,10 @@ extension type LogPage._(Map<String, Object?> json) {
       .toList();
 
   /// The `next_cursor` field.
-  String? get nextCursor =>
-      switch (json['next_cursor']) { final String value => value, _ => null };
+  String? get nextCursor => switch (json['next_cursor']) {
+    final String value => value,
+    _ => null,
+  };
 
   /// Whether the required wire fields have their expected shapes.
   static bool isValid(Object? value) {
@@ -365,23 +375,31 @@ extension type LogRow._(Map<String, Object?> json) {
   int get latencyMs => json['latency_ms'] as int;
 
   /// The `model` field.
-  String? get model =>
-      switch (json['model']) { final String value => value, _ => null };
+  String? get model => switch (json['model']) {
+    final String value => value,
+    _ => null,
+  };
 
   /// The `provider` field.
-  String? get provider =>
-      switch (json['provider']) { final String value => value, _ => null };
+  String? get provider => switch (json['provider']) {
+    final String value => value,
+    _ => null,
+  };
 
   /// The `status` field.
   String get status => json['status'] as String;
 
   /// The `tokens_in` field.
-  int? get tokensIn =>
-      switch (json['tokens_in']) { final int value => value, _ => null };
+  int? get tokensIn => switch (json['tokens_in']) {
+    final int value => value,
+    _ => null,
+  };
 
   /// The `tokens_out` field.
-  int? get tokensOut =>
-      switch (json['tokens_out']) { final int value => value, _ => null };
+  int? get tokensOut => switch (json['tokens_out']) {
+    final int value => value,
+    _ => null,
+  };
 
   /// Whether the required wire fields have their expected shapes.
   static bool isValid(Object? value) {
@@ -541,8 +559,10 @@ extension type ModelPerformance._(Map<String, Object?> json) {
   int get requests => json['requests'] as int;
 
   /// The `tokens` field.
-  int? get tokens =>
-      switch (json['tokens']) { final int value => value, _ => null };
+  int? get tokens => switch (json['tokens']) {
+    final int value => value,
+    _ => null,
+  };
 
   /// Whether the required wire fields have their expected shapes.
   static bool isValid(Object? value) {
@@ -678,8 +698,10 @@ extension type ProjectBody._(Map<String, Object?> json) {
   String get defaultEffort => json['default_effort'] as String;
 
   /// The `default_model` field.
-  String? get defaultModel =>
-      switch (json['default_model']) { final String value => value, _ => null };
+  String? get defaultModel => switch (json['default_model']) {
+    final String value => value,
+    _ => null,
+  };
 
   /// The `id` field.
   String get id => json['id'] as String;
@@ -880,7 +902,8 @@ extension type SupplierCatalogueResponse._(Map<String, Object?> json) {
   /// The `models` field.
   List<SupplierModelResponse> get models => (json['models'] as List<Object?>)
       .map<SupplierModelResponse>(
-          (item) => SupplierModelResponse._(item as Map<String, Object?>))
+        (item) => SupplierModelResponse._(item as Map<String, Object?>),
+      )
       .toList();
 
   /// The `version` field.
@@ -902,8 +925,9 @@ extension type SupplierCatalogueResponse._(Map<String, Object?> json) {
       if (fieldValue is! List<Object?>) {
         return false;
       }
-      if (!fieldValue
-          .every((Object? item) => SupplierModelResponse.isValid(item))) {
+      if (!fieldValue.every(
+        (Object? item) => SupplierModelResponse.isValid(item),
+      )) {
         return false;
       }
     }
@@ -969,8 +993,10 @@ extension type SupplierModelResponse._(Map<String, Object?> json) {
   String get provider => json['provider'] as String;
 
   /// The `routing_class` field.
-  String? get routingClass =>
-      switch (json['routing_class']) { final String value => value, _ => null };
+  String? get routingClass => switch (json['routing_class']) {
+    final String value => value,
+    _ => null,
+  };
 
   /// Whether the required wire fields have their expected shapes.
   static bool isValid(Object? value) {
@@ -1058,7 +1084,8 @@ extension type UsageReport._(Map<String, Object?> json) {
   List<ModelPerformance> get modelPerformance =>
       (json['model_performance'] as List<Object?>)
           .map<ModelPerformance>(
-              (item) => ModelPerformance._(item as Map<String, Object?>))
+            (item) => ModelPerformance._(item as Map<String, Object?>),
+          )
           .toList();
 
   /// The `summary` field.
@@ -1134,8 +1161,10 @@ extension type UsageSummaryBody._(Map<String, Object?> json) {
   int get totalRequests => json['total_requests'] as int;
 
   /// The `total_tokens` field.
-  int? get totalTokens =>
-      switch (json['total_tokens']) { final int value => value, _ => null };
+  int? get totalTokens => switch (json['total_tokens']) {
+    final int value => value,
+    _ => null,
+  };
 
   /// Whether the required wire fields have their expected shapes.
   static bool isValid(Object? value) {

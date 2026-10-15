@@ -131,30 +131,32 @@ final class MeridianError {
     String? requestId,
     Duration? retryAfter,
     String? engineCode,
-  }) =>
-      MeridianError(
-        code: code ?? this.code,
-        type: type ?? this.type,
-        status: status ?? this.status,
-        message: message ?? this.message,
-        retryable: retryable ?? this.retryable,
-        requestId: requestId ?? this.requestId,
-        retryAfter: retryAfter ?? this.retryAfter,
-        engineCode: engineCode ?? this.engineCode,
-      );
+  }) => MeridianError(
+    code: code ?? this.code,
+    type: type ?? this.type,
+    status: status ?? this.status,
+    message: message ?? this.message,
+    retryable: retryable ?? this.retryable,
+    requestId: requestId ?? this.requestId,
+    retryAfter: retryAfter ?? this.retryAfter,
+    engineCode: engineCode ?? this.engineCode,
+  );
 }
 
 /// Creates an SDK-side failure.
-MeridianError clientError(String code, String message,
-        {int status = 0, String? requestId}) =>
-    MeridianError(
-      code: code,
-      type: 'client_error',
-      status: status,
-      message: message,
-      retryable: code == 'network_error',
-      requestId: cleanRequestId(requestId),
-    );
+MeridianError clientError(
+  String code,
+  String message, {
+  int status = 0,
+  String? requestId,
+}) => MeridianError(
+  code: code,
+  type: 'client_error',
+  status: status,
+  message: message,
+  retryable: code == 'network_error',
+  requestId: cleanRequestId(requestId),
+);
 
 /// Creates a configuration refusal without sending a request.
 MeridianError configError(String message) =>
@@ -183,8 +185,12 @@ Map<String, Object?>? parseEnvelope(Object? decoded) {
 }
 
 /// Decodes the error object from a Meridian envelope.
-MeridianError errorFromEnvelope(Map<String, Object?> env,
-    {int? status, Duration? retryAfter, String? headerRequestId}) {
+MeridianError errorFromEnvelope(
+  Map<String, Object?> env, {
+  int? status,
+  Duration? retryAfter,
+  String? headerRequestId,
+}) {
   // [1] Unknown codes retain their raw form while presenting as internal.
   final raw = env['code'] as String? ?? '';
   final known = statusByCode.containsKey(raw);
@@ -199,10 +205,13 @@ MeridianError errorFromEnvelope(Map<String, Object?> env,
   // [2] Stream frames use the code's status; HTTP replies retain the actual status.
   final resolvedStatus = status ?? statusByCode[code] ?? 0;
   final explicitNoRetry = env['retryable'] == false;
-  final retryable = !explicitNoRetry &&
+  final retryable =
+      !explicitNoRetry &&
       (retryableCodes.contains(code) || (!known && resolvedStatus >= 500));
-  final requestId = cleanRequestId(
-          env['request_id'] is String ? env['request_id'] as String : null) ??
+  final requestId =
+      cleanRequestId(
+        env['request_id'] is String ? env['request_id'] as String : null,
+      ) ??
       cleanRequestId(headerRequestId);
 
   // [3] Preserve the raw code and retry delay for callers and the forwarding route.
@@ -219,8 +228,12 @@ MeridianError errorFromEnvelope(Map<String, Object?> env,
 }
 
 /// Decodes an HTTP error response, including non-Meridian responses.
-MeridianError errorFromBody(int status, String? headerRequestId, String body,
-    {Duration? retryAfter}) {
+MeridianError errorFromBody(
+  int status,
+  String? headerRequestId,
+  String body, {
+  Duration? retryAfter,
+}) {
   // [1] Try the engine envelope before treating the body as an intermediary reply.
   Object? decoded;
   try {
@@ -230,10 +243,12 @@ MeridianError errorFromBody(int status, String? headerRequestId, String body,
   }
   final envelope = parseEnvelope(decoded);
   if (envelope != null) {
-    return errorFromEnvelope(envelope,
-        status: status,
-        retryAfter: retryAfter,
-        headerRequestId: headerRequestId);
+    return errorFromEnvelope(
+      envelope,
+      status: status,
+      retryAfter: retryAfter,
+      headerRequestId: headerRequestId,
+    );
   }
   // [2] Preserve the actual HTTP status and safe header request id.
   return MeridianError(

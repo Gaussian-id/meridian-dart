@@ -22,17 +22,23 @@ final class MeridianBrowser {
     // [1] Refuse relative and empty routes before any HTTP call is sent.
     final refusal = urlRefusal(route, 'browser route');
     if (refusal != null) {
-      return MeridianBrowser._(Transport.refused(configError(
-        '$refusal For example: https://example.com/api/meridian/chat',
-      )));
+      return MeridianBrowser._(
+        Transport.refused(
+          configError(
+            '$refusal For example: https://example.com/api/meridian/chat',
+          ),
+        ),
+      );
     }
     // [2] The route is the endpoint; no key or user agent is configured.
-    return MeridianBrowser._(Transport(
-      baseUrl: route,
-      timeout: timeout,
-      maxRetries: maxRetries,
-      httpClient: httpClient,
-    ));
+    return MeridianBrowser._(
+      Transport(
+        baseUrl: route,
+        timeout: timeout,
+        maxRetries: maxRetries,
+        httpClient: httpClient,
+      ),
+    );
   }
 
   final Transport _transport;

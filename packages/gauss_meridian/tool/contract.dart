@@ -58,8 +58,9 @@ bool isInside(String parent, String child) {
     final target = _resolvedPath(child);
     final normalizedRoot = Platform.isWindows ? root.toLowerCase() : root;
     final normalizedTarget = Platform.isWindows ? target.toLowerCase() : target;
-    return normalizedTarget
-        .startsWith('$normalizedRoot${Platform.pathSeparator}');
+    return normalizedTarget.startsWith(
+      '$normalizedRoot${Platform.pathSeparator}',
+    );
   } on FileSystemException {
     return false;
   }
@@ -73,7 +74,8 @@ String _resolvedPath(String path) {
     final parent = Directory(current).parent.path;
     if (parent == current) throw const FileSystemException('No path ancestor');
     missing.add(
-        current.substring(parent.length).replaceFirst(RegExp(r'^[\\/]'), ''));
+      current.substring(parent.length).replaceFirst(RegExp(r'^[\\/]'), ''),
+    );
     current = parent;
   }
   final kind = FileSystemEntity.typeSync(current);
@@ -85,9 +87,8 @@ String _resolvedPath(String path) {
     resolved = '$resolved${Platform.pathSeparator}$name';
   }
   return File.fromUri(
-          Uri.file(resolved, windows: Platform.isWindows).normalizePath())
-      .absolute
-      .path;
+    Uri.file(resolved, windows: Platform.isWindows).normalizePath(),
+  ).absolute.path;
 }
 
 void _refuse(String reason) {
@@ -102,13 +103,16 @@ void main() {
   if (localAppData == null || localAppData.isEmpty) {
     return _refuse('LOCALAPPDATA is unavailable.');
   }
-  final runtime = '$localAppData${Platform.pathSeparator}Gaussian'
+  final runtime =
+      '$localAppData${Platform.pathSeparator}Gaussian'
       '${Platform.pathSeparator}MeridianEngine';
-  final envPath = Platform.environment['GAUSSMERIDIAN_ENV_FILE'] ??
+  final envPath =
+      Platform.environment['GAUSSMERIDIAN_ENV_FILE'] ??
       '$runtime${Platform.pathSeparator}meridian-engine.env';
   if (!isInside(runtime, envPath)) {
     return _refuse(
-        'GAUSSMERIDIAN_ENV_FILE is outside the local runtime folder.');
+      'GAUSSMERIDIAN_ENV_FILE is outside the local runtime folder.',
+    );
   }
   String text;
   try {
@@ -119,7 +123,8 @@ void main() {
   final paid = paidKeysIn(text);
   if (paid.isNotEmpty) {
     return _refuse(
-        '${paid.join(', ')} is set; contract runs never spend money.');
+      '${paid.join(', ')} is set; contract runs never spend money.',
+    );
   }
 
   // [2] Refuse remote endpoints without contacting any endpoint.

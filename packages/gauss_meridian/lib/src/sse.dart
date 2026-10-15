@@ -7,8 +7,9 @@ const maxEventBytes = 16 * 1024 * 1024;
 final class SseDecoder {
   /// Starts an incremental decoder for one HTTP response body.
   SseDecoder() {
-    _utf8 = const Utf8Decoder(allowMalformed: true)
-        .startChunkedConversion(StringConversionSink.fromStringSink(_decoded));
+    _utf8 = const Utf8Decoder(
+      allowMalformed: true,
+    ).startChunkedConversion(StringConversionSink.fromStringSink(_decoded));
   }
 
   final StringBuffer _decoded = StringBuffer();
@@ -30,8 +31,9 @@ final class SseDecoder {
     // Limit the temporary decoded string even when HTTP delivers one huge chunk.
     final events = <String>[];
     for (var start = 0; start < bytes.length; start += 64 * 1024) {
-      final end =
-          start + 64 * 1024 < bytes.length ? start + 64 * 1024 : bytes.length;
+      final end = start + 64 * 1024 < bytes.length
+          ? start + 64 * 1024
+          : bytes.length;
       _utf8.add(bytes.sublist(start, end));
       events.addAll(_consume(_decoded.toString()));
       _decoded.clear();

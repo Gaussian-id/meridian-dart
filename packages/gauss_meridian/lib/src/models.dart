@@ -6,18 +6,20 @@ import 'prices.dart';
 /// A chat message, with provider-specific fields kept in [extra].
 final class ChatMessage {
   /// Creates a message with an advisory role and arbitrary content.
-  ChatMessage(
-      {required this.role, this.content, Map<String, Object?> extra = const {}})
-      : extra = Map.unmodifiable(extra),
-        _hasContent = true;
+  ChatMessage({
+    required this.role,
+    this.content,
+    Map<String, Object?> extra = const {},
+  }) : extra = Map.unmodifiable(extra),
+       _hasContent = true;
 
-  ChatMessage._fromWire(
-      {required this.role,
-      required this.content,
-      required bool hasContent,
-      required Map<String, Object?> extra})
-      : extra = Map.unmodifiable(extra),
-        _hasContent = hasContent;
+  ChatMessage._fromWire({
+    required this.role,
+    required this.content,
+    required bool hasContent,
+    required Map<String, Object?> extra,
+  }) : extra = Map.unmodifiable(extra),
+       _hasContent = hasContent;
 
   /// Creates a system message.
   ChatMessage.system(String content) : this(role: 'system', content: content);
@@ -27,7 +29,7 @@ final class ChatMessage {
 
   /// Creates an assistant message.
   ChatMessage.assistant(String content)
-      : this(role: 'assistant', content: content);
+    : this(role: 'assistant', content: content);
 
   /// The OpenAPI fields represented by this model.
   static const wireFields = {'role', 'content'};
@@ -77,8 +79,8 @@ final class ChatParams {
     this.temperature,
     this.maxTokens,
     Map<String, Object?> extra = const {},
-  })  : messages = List.unmodifiable(messages),
-        extra = Map.unmodifiable(extra);
+  }) : messages = List.unmodifiable(messages),
+       extra = Map.unmodifiable(extra);
 
   /// The OpenAPI fields represented by typed members.
   static const wireFields = {'messages', 'model', 'temperature', 'max_tokens'};
@@ -120,8 +122,11 @@ final class ChatParams {
 /// The three token counts Meridian exposes.
 final class TokenUsage {
   /// Creates a usage record; absent counts remain absent.
-  const TokenUsage(
-      {this.promptTokens, this.completionTokens, this.totalTokens});
+  const TokenUsage({
+    this.promptTokens,
+    this.completionTokens,
+    this.totalTokens,
+  });
 
   /// The allowed usage fields from the pinned schema.
   static const wireFields = {
@@ -143,22 +148,24 @@ final class TokenUsage {
   static TokenUsage? fromJson(Object? value) {
     if (value is! Map<String, dynamic>) return null;
     return TokenUsage(
-      promptTokens:
-          value['prompt_tokens'] is int ? value['prompt_tokens'] as int : null,
+      promptTokens: value['prompt_tokens'] is int
+          ? value['prompt_tokens'] as int
+          : null,
       completionTokens: value['completion_tokens'] is int
           ? value['completion_tokens'] as int
           : null,
-      totalTokens:
-          value['total_tokens'] is int ? value['total_tokens'] as int : null,
+      totalTokens: value['total_tokens'] is int
+          ? value['total_tokens'] as int
+          : null,
     );
   }
 
   /// Writes only present integer token counts.
   Map<String, Object?> toJson() => {
-        if (promptTokens != null) 'prompt_tokens': promptTokens,
-        if (completionTokens != null) 'completion_tokens': completionTokens,
-        if (totalTokens != null) 'total_tokens': totalTokens,
-      };
+    if (promptTokens != null) 'prompt_tokens': promptTokens,
+    if (completionTokens != null) 'completion_tokens': completionTokens,
+    if (totalTokens != null) 'total_tokens': totalTokens,
+  };
 }
 
 /// A chat reply message from the assistant.
@@ -228,19 +235,22 @@ final class AssistantMessage {
 
   /// Writes the normalized assistant message.
   Map<String, Object?> toJson() => {
-        'role': role,
-        'content': content,
-        if (reasoning != null) 'reasoning': reasoning,
-        if (refusal != null) 'refusal': refusal,
-        if (toolCalls != null) 'tool_calls': toolCalls,
-      };
+    'role': role,
+    'content': content,
+    if (reasoning != null) 'reasoning': reasoning,
+    if (refusal != null) 'refusal': refusal,
+    if (toolCalls != null) 'tool_calls': toolCalls,
+  };
 }
 
 /// One choice in a chat completion.
 final class ChatChoice {
   /// Creates a choice.
-  const ChatChoice(
-      {required this.index, required this.message, required this.finishReason});
+  const ChatChoice({
+    required this.index,
+    required this.message,
+    required this.finishReason,
+  });
 
   /// The exact fields of the pinned choice schema.
   static const wireFields = {'index', 'message', 'finish_reason'};
@@ -259,24 +269,29 @@ final class ChatChoice {
     if (value is! Map<String, dynamic> ||
         value['index'] is! int ||
         (value['index'] as int) < 0 ||
-        !const {'stop', 'length', 'tool_calls', 'content_filter'}
-            .contains(value['finish_reason'])) {
+        !const {
+          'stop',
+          'length',
+          'tool_calls',
+          'content_filter',
+        }.contains(value['finish_reason'])) {
       return null;
     }
     final message = AssistantMessage.fromJson(value['message']);
     if (message == null) return null;
     return ChatChoice(
-        index: value['index'] as int,
-        message: message,
-        finishReason: value['finish_reason'] as String);
+      index: value['index'] as int,
+      message: message,
+      finishReason: value['finish_reason'] as String,
+    );
   }
 
   /// Writes this choice.
   Map<String, Object?> toJson() => {
-        'index': index,
-        'message': message.toJson(),
-        'finish_reason': finishReason,
-      };
+    'index': index,
+    'message': message.toJson(),
+    'finish_reason': finishReason,
+  };
 }
 
 /// A buffered chat completion.
@@ -290,8 +305,8 @@ final class ChatCompletion {
     required this.usage,
     this.requestId,
     required Map<String, Object?> raw,
-  })  : choices = List.unmodifiable(choices),
-        raw = Map.unmodifiable(raw);
+  }) : choices = List.unmodifiable(choices),
+       raw = Map.unmodifiable(raw);
 
   /// The exact fields of the pinned completion schema.
   static const wireFields = {
@@ -300,7 +315,7 @@ final class ChatCompletion {
     'created',
     'model',
     'choices',
-    'usage'
+    'usage',
   };
 
   /// Completion id.
@@ -365,10 +380,7 @@ final class ChatCompletion {
   }
 
   /// Writes this completion with usage limited to the three token counts.
-  Map<String, Object?> toJson() => {
-        ...raw,
-        'usage': usage?.toJson(),
-      };
+  Map<String, Object?> toJson() => {...raw, 'usage': usage?.toJson()};
 }
 
 /// One model in the public catalogue.
@@ -394,15 +406,17 @@ final class ModelInfo {
       return null;
     }
     return ModelInfo(
-        id: value['id'] as String, ownedBy: value['owned_by'] as String);
+      id: value['id'] as String,
+      ownedBy: value['owned_by'] as String,
+    );
   }
 
   /// Writes this model record.
   Map<String, Object?> toJson() => {
-        'id': id,
-        'object': 'model',
-        'owned_by': ownedBy,
-      };
+    'id': id,
+    'object': 'model',
+    'owned_by': ownedBy,
+  };
 }
 
 /// The public model catalogue.
@@ -434,7 +448,7 @@ final class ModelList {
 
   /// Writes this model list.
   Map<String, Object?> toJson() => {
-        'object': 'list',
-        'data': data.map((model) => model.toJson()).toList(),
-      };
+    'object': 'list',
+    'data': data.map((model) => model.toJson()).toList(),
+  };
 }

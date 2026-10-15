@@ -61,8 +61,13 @@ Map<String, Map<String, Object?>> _integratorOperations() {
   final result = <String, Map<String, Object?>>{};
   for (final path in paths.entries) {
     for (final method in _map(path.value).entries) {
-      if (!const {'get', 'post', 'put', 'patch', 'delete'}
-          .contains(method.key)) {
+      if (!const {
+        'get',
+        'post',
+        'put',
+        'patch',
+        'delete',
+      }.contains(method.key)) {
         continue;
       }
       final operation = _map(method.value);
@@ -79,9 +84,9 @@ Map<String, Map<String, Object?>> _integratorOperations() {
 Scripted _reply(String operationId, {int? status}) {
   final spec = _spec();
   final schemas = _map(_map(spec['components'])['schemas']);
-  final operation = _integratorOperations()
-      .values
-      .singleWhere((item) => item['operationId'] == operationId);
+  final operation = _integratorOperations().values.singleWhere(
+    (item) => item['operationId'] == operationId,
+  );
   final responses = _map(operation['responses']);
   final successCode = responses.keys.firstWhere((key) => key.startsWith('2'));
   final response = _map(responses[successCode]);
@@ -91,16 +96,19 @@ Scripted _reply(String operationId, {int? status}) {
   }
   final schema = _map(_map(content)['application/json'])['schema'];
   return Scripted(
-      status: status ?? int.parse(successCode),
-      json: _fixture(schema, schemas));
+    status: status ?? int.parse(successCode),
+    json: _fixture(schema, schemas),
+  );
 }
 
 bool _containsPriceKey(Object? value) {
   if (value is Map) {
     for (final entry in value.entries) {
       if (entry.key is String &&
-          RegExp('cost|price', caseSensitive: false)
-              .hasMatch(entry.key as String)) {
+          RegExp(
+            'cost|price',
+            caseSensitive: false,
+          ).hasMatch(entry.key as String)) {
         return true;
       }
       if (_containsPriceKey(entry.value)) return true;
@@ -131,98 +139,146 @@ void main() {
     return instance;
   }
 
-  test('exactly the 24 pinned IntegratorKey method and path operations',
-      () async {
-    // [1] Exercise each public operation with its own schema-valid reply.
-    final admin = client(maxRetries: 0);
-    Future<void> invoke(
-        String operationId, Future<Object?> Function() call) async {
-      engine.next(_reply(operationId));
-      expect(await call(), isA<Ok<Object?>>(), reason: operationId);
-    }
+  test(
+    'exactly the 24 pinned IntegratorKey method and path operations',
+    () async {
+      // [1] Exercise each public operation with its own schema-valid reply.
+      final admin = client(maxRetries: 0);
+      Future<void> invoke(
+        String operationId,
+        Future<Object?> Function() call,
+      ) async {
+        engine.next(_reply(operationId));
+        expect(await call(), isA<Ok<Object?>>(), reason: operationId);
+      }
 
-    await invoke('usage_usage', () => admin.analytics.usage('p_SENTINEL'));
-    await invoke('supplier_catalogue_active', () => admin.catalogue.active());
-    await invoke(
-        'supplier_catalogue_version', () => admin.catalogue.version(17));
-    await invoke('usage_logs', () => admin.logs.list('p_SENTINEL'));
-    await invoke('models_catalogue', () => admin.models.list());
-    await invoke('models_one', () => admin.models.get('m_SENTINEL'));
-    await invoke('orgs_list', () => admin.orgs.list());
-    await invoke('orgs_create',
-        () => admin.orgs.create(CreateOrganisation(name: 'new org')));
-    await invoke(
-        'orgs_by_reference', () => admin.orgs.getByReference('r_SENTINEL'));
-    await invoke('orgs_get', () => admin.orgs.get('o_SENTINEL'));
-    await invoke('projects_list', () => admin.projects.list('o_SENTINEL'));
-    await invoke(
+      await invoke('usage_usage', () => admin.analytics.usage('p_SENTINEL'));
+      await invoke('supplier_catalogue_active', () => admin.catalogue.active());
+      await invoke(
+        'supplier_catalogue_version',
+        () => admin.catalogue.version(17),
+      );
+      await invoke('usage_logs', () => admin.logs.list('p_SENTINEL'));
+      await invoke('models_catalogue', () => admin.models.list());
+      await invoke('models_one', () => admin.models.get('m_SENTINEL'));
+      await invoke('orgs_list', () => admin.orgs.list());
+      await invoke(
+        'orgs_create',
+        () => admin.orgs.create(CreateOrganisation(name: 'new org')),
+      );
+      await invoke(
+        'orgs_by_reference',
+        () => admin.orgs.getByReference('r_SENTINEL'),
+      );
+      await invoke('orgs_get', () => admin.orgs.get('o_SENTINEL'));
+      await invoke('projects_list', () => admin.projects.list('o_SENTINEL'));
+      await invoke(
         'projects_create',
-        () => admin.projects
-            .create('o_SENTINEL', CreateProject(name: 'new project')));
-    await invoke(
-        'projects_get', () => admin.projects.get('o_SENTINEL', 'p_SENTINEL'));
-    await invoke('projects_delete',
-        () => admin.projects.delete('o_SENTINEL', 'p_SENTINEL'));
-    await invoke(
+        () => admin.projects.create(
+          'o_SENTINEL',
+          CreateProject(name: 'new project'),
+        ),
+      );
+      await invoke(
+        'projects_get',
+        () => admin.projects.get('o_SENTINEL', 'p_SENTINEL'),
+      );
+      await invoke(
+        'projects_delete',
+        () => admin.projects.delete('o_SENTINEL', 'p_SENTINEL'),
+      );
+      await invoke(
         'projects_rename',
-        () => admin.projects
-            .update('o_SENTINEL', 'p_SENTINEL', UpdateProject.name('renamed')));
-    await invoke(
-        'keys_list', () => admin.keys.list('o_SENTINEL', 'p_SENTINEL'));
-    await invoke(
+        () => admin.projects.update(
+          'o_SENTINEL',
+          'p_SENTINEL',
+          UpdateProject.name('renamed'),
+        ),
+      );
+      await invoke(
+        'keys_list',
+        () => admin.keys.list('o_SENTINEL', 'p_SENTINEL'),
+      );
+      await invoke(
         'keys_issue',
-        () => admin.keys
-            .create('o_SENTINEL', 'p_SENTINEL', IssueKey(name: 'test')));
-    await invoke('keys_revoke',
-        () => admin.keys.revoke('o_SENTINEL', 'p_SENTINEL', 'k_SENTINEL'));
-    await invoke('models_allowlist',
-        () => admin.projectModels.get('o_SENTINEL', 'p_SENTINEL'));
-    await invoke('models_set_allowlist',
-        () => admin.projectModels.put('o_SENTINEL', 'p_SENTINEL', ['m1']));
-    await invoke(
-        'byok_list', () => admin.providerCredentials.list('o_SENTINEL'));
-    await invoke(
+        () => admin.keys.create(
+          'o_SENTINEL',
+          'p_SENTINEL',
+          IssueKey(name: 'test'),
+        ),
+      );
+      await invoke(
+        'keys_revoke',
+        () => admin.keys.revoke('o_SENTINEL', 'p_SENTINEL', 'k_SENTINEL'),
+      );
+      await invoke(
+        'models_allowlist',
+        () => admin.projectModels.get('o_SENTINEL', 'p_SENTINEL'),
+      );
+      await invoke(
+        'models_set_allowlist',
+        () => admin.projectModels.put('o_SENTINEL', 'p_SENTINEL', ['m1']),
+      );
+      await invoke(
+        'byok_list',
+        () => admin.providerCredentials.list('o_SENTINEL'),
+      );
+      await invoke(
         'byok_set',
-        () => admin.providerCredentials.put('o_SENTINEL', 'provider_SENTINEL',
-            SetCredential(credential: 'test-credential')));
-    await invoke(
+        () => admin.providerCredentials.put(
+          'o_SENTINEL',
+          'provider_SENTINEL',
+          SetCredential(credential: 'test-credential'),
+        ),
+      );
+      await invoke(
         'byok_delete',
-        () => admin.providerCredentials
-            .delete('o_SENTINEL', 'provider_SENTINEL'));
-    await invoke(
+        () =>
+            admin.providerCredentials.delete('o_SENTINEL', 'provider_SENTINEL'),
+      );
+      await invoke(
         'routing_record_get',
-        () => admin.routingRecords
-            .get('request_SENTINEL', projectId: 'p_SENTINEL'));
+        () => admin.routingRecords.get(
+          'request_SENTINEL',
+          projectId: 'p_SENTINEL',
+        ),
+      );
 
-    // [2] Normalize only the known sentinel segments and compare to the pin.
-    final actual = engine.requests.map((request) {
-      final path = request.url.path
-          .replaceAll('o_SENTINEL', '{org}')
-          .replaceAll('p_SENTINEL', '{project}')
-          .replaceAll('m_SENTINEL', '{model}')
-          .replaceAll('k_SENTINEL', '{key}')
-          .replaceAll('provider_SENTINEL', '{provider}')
-          .replaceAll('request_SENTINEL', '{request_id}')
-          .replaceAll('r_SENTINEL', '{reference}')
-          .replaceAll('/17', '/{version}');
-      return '${request.method} $path';
-    }).toSet();
-    expect(engine.requests, hasLength(24));
-    expect(actual, _integratorOperations().keys.toSet());
-    expect(admin.orgs, isNotNull);
-    expect(() => (admin.orgs as dynamic).update, throwsNoSuchMethodError);
-    expect(() => (admin.orgs as dynamic).delete, throwsNoSuchMethodError);
-  });
+      // [2] Normalize only the known sentinel segments and compare to the pin.
+      final actual = engine.requests.map((request) {
+        final path = request.url.path
+            .replaceAll('o_SENTINEL', '{org}')
+            .replaceAll('p_SENTINEL', '{project}')
+            .replaceAll('m_SENTINEL', '{model}')
+            .replaceAll('k_SENTINEL', '{key}')
+            .replaceAll('provider_SENTINEL', '{provider}')
+            .replaceAll('request_SENTINEL', '{request_id}')
+            .replaceAll('r_SENTINEL', '{reference}')
+            .replaceAll('/17', '/{version}');
+        return '${request.method} $path';
+      }).toSet();
+      expect(engine.requests, hasLength(24));
+      expect(actual, _integratorOperations().keys.toSet());
+      expect(admin.orgs, isNotNull);
+      expect(() => (admin.orgs as dynamic).update, throwsNoSuchMethodError);
+      expect(() => (admin.orgs as dynamic).delete, throwsNoSuchMethodError);
+    },
+  );
 
-  test('admin bearer is sent to the admin host, with no idempotency key',
-      () async {
-    engine.next(_reply('orgs_list'));
-    expect(await client().orgs.list(), isA<Ok<Object?>>());
-    final request = engine.requests.single;
-    expect(request.url.origin, Uri.parse(FakeEngine.adminUrl).origin);
-    expect(request.headers['authorization'], 'Bearer ${engine.integratorKey}');
-    expect(request.headers, isNot(contains('idempotency-key')));
-  });
+  test(
+    'admin bearer is sent to the admin host, with no idempotency key',
+    () async {
+      engine.next(_reply('orgs_list'));
+      expect(await client().orgs.list(), isA<Ok<Object?>>());
+      final request = engine.requests.single;
+      expect(request.url.origin, Uri.parse(FakeEngine.adminUrl).origin);
+      expect(
+        request.headers['authorization'],
+        'Bearer ${engine.integratorKey}',
+      );
+      expect(request.headers, isNot(contains('idempotency-key')));
+    },
+  );
 
   for (final unsafe in ['', '.', '..', '%2e%2E', '%2E.']) {
     test('unsafe path id $unsafe is refused in every route family', () async {
@@ -251,7 +307,9 @@ void main() {
       engine.next(_reply('orgs_get'));
       await client().orgs.get(value);
       expect(
-          engine.requests.single.url.toString(), contains('/v1/orgs/$encoded'));
+        engine.requests.single.url.toString(),
+        contains('/v1/orgs/$encoded'),
+      );
     });
   }
 
@@ -280,13 +338,17 @@ void main() {
 
   test('key issue retries rate_limited and returns the API key', () async {
     engine.next(
-        engineError('rate_limited'),
-        Scripted(status: 201, json: {
+      engineError('rate_limited'),
+      Scripted(
+        status: 201,
+        json: {
           'key_id': 'key-1',
           'api_key': 'issued-secret',
           'key_prefix': 'prefix',
           'message': 'save once',
-        }));
+        },
+      ),
+    );
     final result = await client().keys.create('org', 'project', IssueKey());
     expect(result, isA<Ok<IssuedKey>>());
     expect((result as Ok<IssuedKey>).data.apiKey, 'issued-secret');
@@ -297,30 +359,35 @@ void main() {
   for (final reference in ['ext', null, '']) {
     test('organisation create retry rule for reference $reference', () async {
       engine.next(
-          engineError('service_unavailable'),
-          engineError('service_unavailable'),
-          engineError('service_unavailable'));
-      final body =
-          CreateOrganisation(name: 'org', externalReference: reference);
+        engineError('service_unavailable'),
+        engineError('service_unavailable'),
+        engineError('service_unavailable'),
+      );
+      final body = CreateOrganisation(
+        name: 'org',
+        externalReference: reference,
+      );
       final result = await client().orgs.create(body);
       expect(result, isA<Err<Object?>>());
       expect(engine.requests, hasLength(reference == 'ext' ? 3 : 1));
     });
   }
 
-  test('usage prices and costs are stripped recursively before parsing',
-      () async {
-    final data = _map(_reply('usage_usage').json);
-    final summary = _map(data['summary']);
-    summary['total_cost'] = 99;
-    summary['cost'] = {'Cost_Charged': 10};
-    data['supplier_price'] = 30;
-    engine.next(Scripted(json: data));
-    final result = await client().analytics.usage('project');
-    expect(result, isA<Ok<UsageReport>>());
-    expect((result as Ok<UsageReport>).data.summary.totalRequests, 1);
-    expect(_containsPriceKey(jsonDecode(jsonEncode(result.data))), isFalse);
-  });
+  test(
+    'usage prices and costs are stripped recursively before parsing',
+    () async {
+      final data = _map(_reply('usage_usage').json);
+      final summary = _map(data['summary']);
+      summary['total_cost'] = 99;
+      summary['cost'] = {'Cost_Charged': 10};
+      data['supplier_price'] = 30;
+      engine.next(Scripted(json: data));
+      final result = await client().analytics.usage('project');
+      expect(result, isA<Ok<UsageReport>>());
+      expect((result as Ok<UsageReport>).data.summary.totalRequests, 1);
+      expect(_containsPriceKey(jsonDecode(jsonEncode(result.data))), isFalse);
+    },
+  );
 
   test('catalogue supplier prices are stripped recursively', () async {
     final data = <String, Object?>{
@@ -334,7 +401,7 @@ void main() {
             'streaming': true,
             'tools': false,
             'vision': false,
-            'json_output': false
+            'json_output': false,
           },
           'limits': {'context_tokens': 1, 'max_output_tokens': 1},
           'supplier_price': {'input_per_million': 7},
@@ -345,30 +412,38 @@ void main() {
     final result = await client().catalogue.active();
     expect(result, isA<Ok<SupplierCatalogueResponse>>());
     expect(
-        (result as Ok<SupplierCatalogueResponse>).data.models.single.id, 'm1');
+      (result as Ok<SupplierCatalogueResponse>).data.models.single.id,
+      'm1',
+    );
     expect(_containsPriceKey(jsonDecode(jsonEncode(result.data))), isFalse);
   });
 
   test('routing-record price keys are stripped inside opaque record', () async {
-    engine.next(Scripted(json: {
-      'org_id': 'org',
-      'project_id': 'project',
-      'request_id': 'request',
-      'recorded_at_ms': 1,
-      'record': {
-        'details': [
-          {'supplier_price': 5, 'Cost_Charged': 3, 'safe': 'kept'}
-        ]
-      },
-    }));
-    final result =
-        await client().routingRecords.get('request', projectId: 'project');
+    engine.next(
+      Scripted(
+        json: {
+          'org_id': 'org',
+          'project_id': 'project',
+          'request_id': 'request',
+          'recorded_at_ms': 1,
+          'record': {
+            'details': [
+              {'supplier_price': 5, 'Cost_Charged': 3, 'safe': 'kept'},
+            ],
+          },
+        },
+      ),
+    );
+    final result = await client().routingRecords.get(
+      'request',
+      projectId: 'project',
+    );
     expect(result, isA<Ok<RoutingRecordBody>>());
     final record = (result as Ok<RoutingRecordBody>).data.record;
     expect(record, {
       'details': [
-        {'safe': 'kept'}
-      ]
+        {'safe': 'kept'},
+      ],
     });
   });
 
@@ -389,21 +464,31 @@ void main() {
     final result = await client().orgs.get('org');
     expect(result, isA<Err<Object?>>());
     expect((result as Err<Object?>).error.code, 'network_error');
-    expect((result as Err<Object?>).error.message,
-        'The admin response did not have the expected shape.');
+    expect(
+      (result as Err<Object?>).error.message,
+      'The admin response did not have the expected shape.',
+    );
   });
 
   test('project update bodies have exactly one selected field', () async {
     final admin = client();
     engine.next(_reply('projects_rename'), _reply('projects_rename'));
     expect(
-        await admin.projects
-            .update('org', 'project', UpdateProject.defaultModel(null)),
-        isA<Ok<Object?>>());
+      await admin.projects.update(
+        'org',
+        'project',
+        UpdateProject.defaultModel(null),
+      ),
+      isA<Ok<Object?>>(),
+    );
     expect(
-        await admin.projects
-            .update('org', 'project', UpdateProject.defaultEffort('high')),
-        isA<Ok<Object?>>());
+      await admin.projects.update(
+        'org',
+        'project',
+        UpdateProject.defaultEffort('high'),
+      ),
+      isA<Ok<Object?>>(),
+    );
     expect(engine.bodies(), [
       {'default_model': null},
       {'default_effort': 'high'},
@@ -420,8 +505,10 @@ void main() {
       ('SetCredential', SetCredential.wireFields),
     ]) {
       expect(
-          fields.toSet(), _map(_map(schemas[name])['properties']).keys.toSet(),
-          reason: name);
+        fields.toSet(),
+        _map(_map(schemas[name])['properties']).keys.toSet(),
+        reason: name,
+      );
     }
   });
 }
