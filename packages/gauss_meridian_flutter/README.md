@@ -81,7 +81,7 @@ class _ReplyState extends State<Reply> {
 
   @override
   void dispose() {
-    _subscription.cancel(); // also aborts the upstream request
+    unawaited(_subscription.cancel()); // also aborts the upstream request
     super.dispose();
   }
 

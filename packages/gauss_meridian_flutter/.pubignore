@@ -7,3 +7,12 @@ pubspec.lock
 
 # Local development override of gauss_meridian; never published.
 pubspec_overrides.yaml
+
+# Never publish local secrets, signing material or logs.
+.env*
+*.pem
+*.key
+*.p12
+*.jks
+key.properties
+*.log

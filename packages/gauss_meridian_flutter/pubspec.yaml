@@ -9,7 +9,7 @@ issue_tracker: https://github.com/Gaussian-id/meridian-dart/issues
 topics: [ai, llm, sdk, chat, streaming]
 environment:
   sdk: ">=3.11.0 <4.0.0"
-  flutter: '>=3.24.0'
+  flutter: '>=3.41.0'
 dependencies:
   flutter:
     sdk: flutter

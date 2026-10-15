@@ -5,7 +5,10 @@ import 'package:test/test.dart';
 
 void main() {
   test('the package version is semantic', () {
-    expect(meridianVersion, matches(RegExp(r'^\d+\.\d+\.\d+$')));
+    expect(
+      meridianVersion,
+      matches(RegExp(r'^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$')),
+    );
   });
 
   test('meridianVersion matches the pubspec version', () {

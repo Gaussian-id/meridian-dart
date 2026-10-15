@@ -7,3 +7,19 @@ pubspec.lock
 
 # Monorepo tooling: these scripts read ../../spec and do not work outside the repository.
 tool/
+
+# The tests need the monorepo (../../spec and tool/); they stay in git and the gates.
+test/
+dart_test.yaml
+
+# Local development overrides; never published.
+pubspec_overrides.yaml
+
+# Never publish local secrets, signing material or logs.
+.env*
+*.pem
+*.key
+*.p12
+*.jks
+key.properties
+*.log

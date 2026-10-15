@@ -74,5 +74,6 @@ void main() {
     expect(error.code, 'invalid_request');
     expect(error.type, 'client_error');
     expect(error.message, contains('MeridianBrowser'));
+    expect(error.message, contains('package:gauss_meridian/browser.dart'));
   });
 }

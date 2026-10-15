@@ -66,7 +66,7 @@ class _ChatReplyState extends State<ChatReply> {
   @override
   void dispose() {
     // Cancelling the subscription aborts the upstream request.
-    _subscription?.cancel();
+    unawaited(_subscription?.cancel());
     _client.close();
     super.dispose();
   }

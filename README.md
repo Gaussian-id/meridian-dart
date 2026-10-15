@@ -14,6 +14,8 @@ Each package's README has the quick start, streaming, the forwarding route, admi
 - [packages/gauss_meridian/README.md](packages/gauss_meridian/README.md)
 - [packages/gauss_meridian_flutter/README.md](packages/gauss_meridian_flutter/README.md)
 
+`gauss_meridian_flutter` depends on the hosted `gauss_meridian`, so release `gauss_meridian` to pub.dev first, then `gauss_meridian_flutter`.
+
 ## How the pieces fit
 
 1. **Your server** uses `Meridian` from `gauss_meridian` with a project key (`gmr_...`) read from the environment.
