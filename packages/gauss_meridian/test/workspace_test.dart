@@ -8,6 +8,13 @@ void main() {
     expect(meridianVersion, matches(RegExp(r'^\d+\.\d+\.\d+$')));
   });
 
+  test('meridianVersion matches the pubspec version', () {
+    final line = File('pubspec.yaml')
+        .readAsLinesSync()
+        .singleWhere((line) => line.startsWith('version:'));
+    expect(meridianVersion, line.substring('version:'.length).trim());
+  });
+
   test('the package declares only the approved dependencies', () {
     // [1] Read the two dependency sections without adding a YAML parser.
     final lines = File('pubspec.yaml').readAsLinesSync();

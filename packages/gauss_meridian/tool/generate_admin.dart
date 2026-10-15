@@ -340,6 +340,11 @@ Future<void> main(List<String> args) async {
       jsonDecode(File('${root.path}/meridian-admin.json').readAsStringSync())));
   final source =
       _map(jsonDecode(File('${root.path}/SOURCE.json').readAsStringSync()));
+  final packageVersion = File('pubspec.yaml')
+      .readAsLinesSync()
+      .singleWhere((line) => line.startsWith('version:'))
+      .substring('version:'.length)
+      .trim();
   final schemas = _map(_map(admin['components'])['schemas']);
   final selected = <String>{};
   var operations = 0;
@@ -375,7 +380,7 @@ Future<void> main(List<String> args) async {
     }
   }
   final versionText = '$_header/// The current Meridian package version.\n'
-      "const meridianVersion = '0.0.0';\n"
+      "const meridianVersion = '$packageVersion';\n"
       '/// The pinned engine specification revision.\n'
       "const engineSpecCommit = '${source['engineCommit']}';\n"
       '/// The pinned public engine API version.\n'
