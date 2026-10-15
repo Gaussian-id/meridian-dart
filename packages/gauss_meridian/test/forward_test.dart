@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:gauss_meridian/gauss_meridian.dart';
 import 'package:gauss_meridian/shelf.dart';
+import 'package:gauss_meridian/src/forward.dart'
+    show appCredentialCodes, browserError;
 import 'package:shelf/shelf.dart' show Handler, Request, Response;
 import 'package:test/test.dart' hide completion;
 
