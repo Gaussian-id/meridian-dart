@@ -7,7 +7,7 @@ import 'package:gauss_meridian/admin.dart' as admin;
 import 'package:gauss_meridian/gauss_meridian.dart' as server;
 import 'package:gauss_meridian_flutter/gauss_meridian_flutter.dart';
 
-import '../../gauss_meridian/test/support/fake_engine.dart';
+import 'support/fake_engine.dart';
 
 void main() {
   const route = 'https://example.com/api/meridian/chat';
@@ -168,7 +168,10 @@ void main() {
     expect(
       imports,
       everyElement(
-        anyOf('package:gauss_meridian/browser.dart', startsWith('package:flutter/')),
+        anyOf(
+          'package:gauss_meridian/browser.dart',
+          startsWith('package:flutter/'),
+        ),
       ),
     );
   });

@@ -2,11 +2,14 @@
 
 import 'dart:io';
 
-Future<int> runGate(List<String> arguments) async {
+const flutterPackage = '../gauss_meridian_flutter';
+
+Future<int> runGate(List<String> arguments, {String? workingDirectory}) async {
   print('> dart ${arguments.join(' ')}');
   final process = await Process.start(
     Platform.resolvedExecutable,
     arguments,
+    workingDirectory: workingDirectory,
     mode: ProcessStartMode.inheritStdio,
   );
   return process.exitCode;
@@ -18,7 +21,7 @@ Future<int> runFlutterGate(List<String> arguments) async {
     final process = await Process.start(
       'flutter',
       arguments,
-      workingDirectory: '../gauss_meridian_flutter',
+      workingDirectory: flutterPackage,
       mode: ProcessStartMode.inheritStdio,
       runInShell: Platform.isWindows,
     );
@@ -59,14 +62,22 @@ Future<void> main() async {
       exit(exitCode);
     }
   }
-  // [4] Flutter analysis and widget tests are required once its package exists.
-  if (File('../gauss_meridian_flutter/pubspec.yaml').existsSync()) {
+  // [4] Flutter formatting, analysis and widget tests are required once its
+  // package exists.
+  if (File('$flutterPackage/pubspec.yaml').existsSync()) {
+    final formatted = await runGate([
+      'format',
+      '--output=none',
+      '--set-exit-if-changed',
+      '.',
+    ], workingDirectory: flutterPackage);
+    if (formatted != 0) exit(formatted);
     if (!await flutterOnPath()) {
       print('Flutter is not on PATH; the Flutter gate cannot pass.');
       exit(1);
     }
     for (final command in <List<String>>[
-      ['analyze'],
+      ['analyze', '--fatal-infos'],
       ['test'],
     ]) {
       final exitCode = await runFlutterGate(command);
